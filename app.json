@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Best Solving",
+    "slug": "best-solving",
+    "scheme": "bestsolving",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0E16",
+    "splash": {
+      "backgroundColor": "#0B0E16"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bestsolving.app"
+    },
+    "android": {
+      "package": "com.bestsolving.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0E16"
+      }
+    }
+  }
+}
