@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme';
@@ -7,8 +7,33 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { saveTokens } from '../../utils/tokenStorage';
 import { useSocket } from '../../api/socket';
+import { api, ApiError } from '../../api/client';
+import { validateRegisterForm } from '../../utils/validation';
 
-const API_URL = 'http://localhost:3000/api';
+interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface FormErrors {
+  name?: string;
+  identifier?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+}
+
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    try {
+      const parsed = JSON.parse(error.message);
+      return Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+    } catch {
+      return error.message;
+    }
+  }
+  return 'Please try again.';
+}
 
 export default function RegisterScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -18,18 +43,19 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleRegister = async () => {
-    if (!name.trim() || !identifier.trim() || !password) {
-      Alert.alert('Missing info', 'Please fill in your name, email/phone, and password.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Passwords do not match', 'Please re-enter your password.');
+    const fieldErrors = validateRegisterForm({ name, identifier, password, confirmPassword });
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
       return;
     }
 
+    setErrors({});
     setLoading(true);
+
     const trimmedIdentifier = identifier.trim();
     const payload = {
       name: name.trim(),
@@ -38,23 +64,16 @@ export default function RegisterScreen({ navigation }: any) {
     };
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const { accessToken, refreshToken } = await api.post<AuthResponse>('/auth/register', payload, {
+        skipAuth: true,
       });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      const { accessToken, refreshToken } = await response.json();
       await saveTokens(accessToken, refreshToken);
       await connect();
 
       navigation.navigate('MainTabs');
     } catch (error) {
-      Alert.alert('Registration failed', error instanceof Error && error.message ? error.message : 'Please try again.');
+      setErrors({ general: extractErrorMessage(error) });
     } finally {
       setLoading(false);
     }
@@ -81,6 +100,8 @@ export default function RegisterScreen({ navigation }: any) {
             onChangeText={setName}
             icon={<Ionicons name="person-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.name ? <Text style={styles.fieldError}>{errors.name}</Text> : null}
+
           <Input
             label="Email or phone number"
             placeholder="john@example.com"
@@ -89,6 +110,8 @@ export default function RegisterScreen({ navigation }: any) {
             autoCapitalize="none"
             icon={<Ionicons name="mail-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.identifier ? <Text style={styles.fieldError}>{errors.identifier}</Text> : null}
+
           <Input
             label="Password"
             placeholder="At least 8 characters"
@@ -97,6 +120,8 @@ export default function RegisterScreen({ navigation }: any) {
             secureTextEntry
             icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+
           <Input
             label="Confirm password"
             placeholder="Repeat your password"
@@ -105,6 +130,9 @@ export default function RegisterScreen({ navigation }: any) {
             secureTextEntry
             icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.confirmPassword ? <Text style={styles.fieldError}>{errors.confirmPassword}</Text> : null}
+
+          {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
 
           <Button label="Create Account" onPress={handleRegister} loading={loading} />
 
@@ -146,6 +174,18 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  fieldError: {
+    ...typography.caption,
+    color: '#DC2626',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  generalError: {
+    ...typography.body,
+    color: '#DC2626',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   terms: {
     ...typography.caption,
