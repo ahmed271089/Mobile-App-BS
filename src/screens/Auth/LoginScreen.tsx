@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme';
@@ -7,8 +7,30 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { saveTokens } from '../../utils/tokenStorage';
 import { useSocket } from '../../api/socket';
+import { api, ApiError } from '../../api/client';
 
-const API_URL = 'http://localhost:3000/api';
+interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface FormErrors {
+  identifier?: string;
+  password?: string;
+  general?: string;
+}
+
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    try {
+      const parsed = JSON.parse(error.message);
+      return Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+    } catch {
+      return error.message;
+    }
+  }
+  return 'Please try again.';
+}
 
 export default function LoginScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -16,32 +38,42 @@ export default function LoginScreen({ navigation }: any) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleLogin = async () => {
-    setLoading(true);
     const trimmedIdentifier = identifier.trim();
+
+    // Basic presence check before hitting the network
+    const fieldErrors: FormErrors = {};
+    if (!trimmedIdentifier) fieldErrors.identifier = 'Please enter your email or phone number.';
+    if (!password) fieldErrors.password = 'Please enter your password.';
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
+    setLoading(true);
+
     const credentials = trimmedIdentifier.includes('@')
       ? { email: trimmedIdentifier, password }
       : { phone: trimmedIdentifier, password };
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
+      const { accessToken, refreshToken } = await api.post<AuthResponse>('/auth/login', credentials, {
+        skipAuth: true,
       });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      const { accessToken, refreshToken } = await response.json();
       await saveTokens(accessToken, refreshToken);
       await connect();
 
-      navigation.navigate('MainTabs');
+      setSuccess(true);
+      // Brief visible confirmation before navigating away
+      setTimeout(() => navigation.navigate('MainTabs'), 400);
     } catch (error) {
-      Alert.alert('Login failed', error instanceof Error && error.message ? error.message : 'Please try again.');
+      setErrors({ general: extractErrorMessage(error) });
     } finally {
       setLoading(false);
     }
@@ -66,6 +98,8 @@ export default function LoginScreen({ navigation }: any) {
             autoCapitalize="none"
             icon={<Ionicons name="mail-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.identifier ? <Text style={styles.fieldError}>{errors.identifier}</Text> : null}
+
           <Input
             label="Password"
             placeholder="••••••••"
@@ -74,10 +108,22 @@ export default function LoginScreen({ navigation }: any) {
             secureTextEntry
             icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
           />
+          {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
 
-          <Text style={styles.forgot}>Forgot password?</Text>
+          <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
+            <Text style={styles.forgot}>Forgot password?</Text>
+          </Pressable>
 
-          <Button label="Log In" onPress={handleLogin} loading={loading} style={{ marginTop: spacing.md }} />
+          {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
+          {success ? <Text style={styles.successText}>Logged in! Redirecting…</Text> : null}
+
+          <Button
+            label={success ? 'Success ✓' : 'Log In'}
+            onPress={handleLogin}
+            loading={loading}
+            style={{ marginTop: spacing.md }}
+            disabled={loading || success}
+          />
 
           <View style={styles.dividerRow}>
             <View style={styles.divider} />
@@ -126,6 +172,24 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'right',
     marginBottom: spacing.lg,
+  },
+  fieldError: {
+    ...typography.caption,
+    color: '#DC2626',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  generalError: {
+    ...typography.body,
+    color: '#DC2626',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  successText: {
+    ...typography.body,
+    color: '#16A34A',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   dividerRow: {
     flexDirection: 'row',
