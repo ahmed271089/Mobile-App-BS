@@ -21,11 +21,36 @@ const navTheme = {
   },
 };
 
+// Maps incoming deep links (e.g. bestsolving://reset-password?token=abc123)
+// to the matching nested screen. The nesting here must mirror the
+// Stack.Screen structure below: Auth -> AuthStackNavigator -> its screens.
+const linking = {
+  prefixes: ['bestsolving://'],
+  config: {
+    screens: {
+      Auth: {
+        screens: {
+          Login: 'login',
+          Register: 'register',
+          ForgotPassword: 'forgot-password',
+          ResetPassword: {
+            path: 'reset-password',
+            parse: {
+              token: (token: string) => token,
+            },
+          },
+        },
+      },
+      MainTabs: 'main',
+    },
+  },
+};
+
 export default function RootNavigator() {
   return (
-    <NavigationContainer theme={navTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
-        <Stack.Screen name="Login" component={AuthStackNavigator} />
+    <NavigationContainer theme={navTheme} linking={linking}>
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Auth">
+        <Stack.Screen name="Auth" component={AuthStackNavigator} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen
           name="CreatePostStack"

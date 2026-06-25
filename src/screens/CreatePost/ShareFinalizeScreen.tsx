@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Switch,
+  ScrollView,
+  Image,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme';
@@ -7,9 +15,62 @@ import { Button } from '../../components/Button';
 
 type Audience = 'PUBLIC' | 'COMMUNITY';
 
+/** ─── Step Indicator ─────────────────────────────────────────── */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={stepStyles.wrapper}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            stepStyles.dot,
+            i < current ? stepStyles.dotDone : i === current - 1 ? stepStyles.dotActive : stepStyles.dotInactive,
+          ]}
+        />
+      ))}
+      <Text style={stepStyles.label}>
+        Step {current} of {total}
+      </Text>
+    </View>
+  );
+}
+
+const stepStyles = StyleSheet.create({
+  wrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.lg,
+  },
+  dot: {
+    height: 4,
+    borderRadius: 2,
+  },
+  dotActive: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  dotDone: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.55,
+  },
+  dotInactive: {
+    flex: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: 4,
+    flexShrink: 0,
+  },
+});
+
+/** ─── Screen ─────────────────────────────────────────────────── */
 export default function ShareFinalizeScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
-  const { title, description } = route.params ?? {};
+  const { title, description, type, categoryId, images = [] } = route.params ?? {};
 
   const [audience, setAudience] = useState<Audience>('PUBLIC');
   const [shareToFeed, setShareToFeed] = useState(true);
@@ -17,7 +78,7 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
 
   const handlePost = () => {
     setPosting(true);
-    // TODO: call POST /api/posts with { type, categoryId, title, description, attachments, audience }
+    // TODO: call POST /api/posts with { type, categoryId, title, description, attachments: images, audience, shareToFeed }
     setTimeout(() => {
       setPosting(false);
       navigation.navigate('MainTabs', { screen: 'Home' });
@@ -25,34 +86,72 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
+    >
+      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
           <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Finalize Sharing</Text>
+        <Text style={styles.headerTitle}>Finalize & Share</Text>
         <View style={{ width: 36 }} />
       </View>
 
+      <StepIndicator current={3} total={3} />
+
+      {/* Post Preview Card */}
       <View style={styles.previewCard}>
-        <Text style={styles.previewTitle} numberOfLines={1}>
+        {/* Type badge */}
+        <View style={[styles.typeBadge, type === 'PROBLEM' ? styles.typeBadgeProblem : styles.typeBadgeSolution]}>
+          <Ionicons
+            name={type === 'PROBLEM' ? 'warning-outline' : 'bulb-outline'}
+            size={12}
+            color={type === 'PROBLEM' ? colors.danger : colors.success}
+          />
+          <Text style={[styles.typeBadgeLabel, { color: type === 'PROBLEM' ? colors.danger : colors.success }]}>
+            {type === 'PROBLEM' ? 'Problem' : 'Solution'}
+          </Text>
+        </View>
+
+        <Text style={styles.previewTitle} numberOfLines={2}>
           {title || 'Untitled post'}
         </Text>
-        <Text style={styles.previewDesc} numberOfLines={2}>
+        <Text style={styles.previewDesc} numberOfLines={3}>
           {description || 'No description provided.'}
         </Text>
+
+        {/* Image thumbnails preview */}
+        {images.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.previewThumbRow}
+            contentContainerStyle={{ gap: spacing.sm }}
+          >
+            {images.map((uri: string, idx: number) => (
+              <Image key={idx} source={{ uri }} style={styles.previewThumb} />
+            ))}
+          </ScrollView>
+        )}
       </View>
 
+      {/* Audience */}
       <Text style={styles.label}>Who can see this?</Text>
 
       <Pressable
         style={[styles.audienceOption, audience === 'PUBLIC' && styles.audienceSelected]}
         onPress={() => setAudience('PUBLIC')}
       >
-        <Ionicons name="globe-outline" size={20} color={audience === 'PUBLIC' ? colors.primary : colors.textSecondary} />
+        <Ionicons
+          name="globe-outline"
+          size={20}
+          color={audience === 'PUBLIC' ? colors.primary : colors.textSecondary}
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.audienceTitle}>Public</Text>
-          <Text style={styles.audienceDesc}>The internal community feed and search results can find it.</Text>
+          <Text style={styles.audienceDesc}>Visible in the community feed and search results.</Text>
         </View>
         {audience === 'PUBLIC' && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
       </Pressable>
@@ -61,7 +160,11 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
         style={[styles.audienceOption, audience === 'COMMUNITY' && styles.audienceSelected]}
         onPress={() => setAudience('COMMUNITY')}
       >
-        <Ionicons name="people-outline" size={20} color={audience === 'COMMUNITY' ? colors.primary : colors.textSecondary} />
+        <Ionicons
+          name="people-outline"
+          size={20}
+          color={audience === 'COMMUNITY' ? colors.primary : colors.textSecondary}
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.audienceTitle}>Community</Text>
           <Text style={styles.audienceDesc}>Visible only to verified experts in this category.</Text>
@@ -69,6 +172,7 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
         {audience === 'COMMUNITY' && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
       </Pressable>
 
+      {/* Share to feed toggle */}
       <View style={styles.toggleRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.audienceTitle}>Share to News Feed</Text>
@@ -82,19 +186,21 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
         />
       </View>
 
-      <View style={{ flex: 1 }} />
-
-      <Button label="Share Now" loading={posting} onPress={handlePost} />
-    </View>
+      {/* Post button */}
+      <Button
+        label="Share Now"
+        style={{ marginTop: spacing.xl, marginBottom: spacing.lg }}
+        loading={posting}
+        onPress={handlePost}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
+  scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   header: {
     flexDirection: 'row',
@@ -121,15 +227,46 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.xl,
+    gap: spacing.sm,
+  },
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    marginBottom: 4,
+  },
+  typeBadgeProblem: {
+    backgroundColor: colors.dangerMuted,
+  },
+  typeBadgeSolution: {
+    backgroundColor: colors.successMuted,
+  },
+  typeBadgeLabel: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   previewTitle: {
     ...typography.h3,
     color: colors.textPrimary,
-    marginBottom: 4,
   },
   previewDesc: {
     ...typography.caption,
     color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  previewThumbRow: {
+    marginTop: spacing.sm,
+  },
+  previewThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   label: {
     ...typography.caption,

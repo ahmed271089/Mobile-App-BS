@@ -81,7 +81,7 @@ export default function ProfileScreen({ navigation }: any) {
         onPress={async () => {
           await clearTokens();
           disconnect();
-          navigation.navigate('Login');
+          navigation.navigate('Auth', { screen: 'Login' });
         }}
       >
         <Ionicons name="log-out-outline" size={18} color={colors.danger} />

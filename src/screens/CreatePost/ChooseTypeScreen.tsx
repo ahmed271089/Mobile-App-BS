@@ -5,6 +5,59 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme';
 import { Button } from '../../components/Button';
 
+/** ─── Step Indicator ─────────────────────────────────────────── */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={stepStyles.wrapper}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            stepStyles.dot,
+            i < current ? stepStyles.dotDone : i === current - 1 ? stepStyles.dotActive : stepStyles.dotInactive,
+          ]}
+        />
+      ))}
+      <Text style={stepStyles.label}>
+        Step {current} of {total}
+      </Text>
+    </View>
+  );
+}
+
+const stepStyles = StyleSheet.create({
+  wrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.lg,
+  },
+  dot: {
+    height: 4,
+    borderRadius: 2,
+  },
+  dotActive: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  dotDone: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.55,
+  },
+  dotInactive: {
+    flex: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: 4,
+    flexShrink: 0,
+  },
+});
+
+/** ─── Screen ─────────────────────────────────────────────────── */
 export default function ChooseTypeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = React.useState<'PROBLEM' | 'SOLUTION' | null>(null);
@@ -19,8 +72,10 @@ export default function ChooseTypeScreen({ navigation }: any) {
         <View style={{ width: 36 }} />
       </View>
 
-      <Text style={styles.title}>What would you like to share today?</Text>
-      <Text style={styles.subtitle}>Choose the type of post you want. Select this option first.</Text>
+      <StepIndicator current={1} total={3} />
+
+      <Text style={styles.title}>What would you like to share?</Text>
+      <Text style={styles.subtitle}>Choose the type of post you want to create.</Text>
 
       <Pressable
         style={[styles.option, selected === 'PROBLEM' && styles.optionSelected]}
@@ -35,6 +90,9 @@ export default function ChooseTypeScreen({ navigation }: any) {
             Describe a fault or issue you need help with. Our AI agent will give an initial diagnosis.
           </Text>
         </View>
+        {selected === 'PROBLEM' && (
+          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+        )}
       </Pressable>
 
       <Pressable
@@ -50,12 +108,15 @@ export default function ChooseTypeScreen({ navigation }: any) {
             Share your fix for a problem you've already solved. Help build the community library.
           </Text>
         </View>
+        {selected === 'SOLUTION' && (
+          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+        )}
       </Pressable>
 
       <View style={{ flex: 1 }} />
 
       <Button
-        label="Continue to All Steps"
+        label="Next: Define the Details"
         disabled={!selected}
         onPress={() => navigation.navigate('ProblemDefinition', { type: selected })}
       />
@@ -100,6 +161,7 @@ const styles = StyleSheet.create({
   },
   option: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.cardBorder,
