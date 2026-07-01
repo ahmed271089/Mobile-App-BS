@@ -1,35 +1,129 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../theme';
-import { Badge } from './Badge';
-import { MockPost } from '../data/mockData';
+import React from "react";
+import { View, Text, StyleSheet, Pressable, Image } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useColors, radius, spacing, typography } from "../theme";
+import { Badge } from "./Badge";
+import { MockPost } from "../data/mockData";
 
-// Placeholder gradient block standing in for a real thumbnail image.
-function Thumbnail({ seed }: { seed: string }) {
-  if (seed.startsWith('http')) {
-    return <Image source={{ uri: seed }} style={styles.thumbnail} />;
-  }
-  const hue = seed.length * 37 % 360;
-  return (
-    <View
-      style={[
-        styles.thumbnail,
-        { backgroundColor: `hsl(${hue}, 45%, 22%)` },
-      ]}
-    />
+export function PostCard({
+  post,
+  onPress,
+}: {
+  post: MockPost;
+  onPress?: () => void;
+}) {
+  const colors = useColors();
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.surfaceContainer,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+          padding: spacing.md,
+          marginBottom: spacing.lg,
+        },
+        thumbnail: {
+          height: 140,
+          borderRadius: radius.md,
+          marginBottom: spacing.md,
+        },
+        topRow: {
+          flexDirection: "row",
+          gap: spacing.xs,
+          marginBottom: spacing.sm,
+          flexWrap: "wrap",
+        },
+        title: {
+          ...typography.h3,
+          color: colors.onSurface,
+          marginBottom: 4,
+        },
+        description: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          marginBottom: spacing.md,
+        },
+        footer: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        },
+        authorRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          flex: 1,
+        },
+        avatar: {
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: colors.primaryContainer,
+          alignItems: "center",
+          justifyContent: "center",
+          marginRight: spacing.xs,
+        },
+        avatarText: {
+          fontSize: 10,
+          fontWeight: "700",
+          color: colors.primary,
+        },
+        authorName: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+        },
+        dot: {
+          color: colors.onSurfaceVariant,
+          marginHorizontal: 4,
+        },
+        time: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+        },
+        statsRow: {
+          flexDirection: "row",
+          gap: spacing.md,
+        },
+        statItem: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+        },
+        statText: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+        },
+      }),
+    [colors],
   );
-}
 
-export function PostCard({ post, onPress }: { post: MockPost; onPress?: () => void }) {
+  // Placeholder gradient block standing in for a real thumbnail image.
+  const Thumbnail = ({ seed }: { seed: string }) => {
+    if (seed.startsWith("http")) {
+      return <Image source={{ uri: seed }} style={styles.thumbnail} />;
+    }
+    const hue = (seed.length * 37) % 360;
+    return (
+      <View
+        style={[styles.thumbnail, { backgroundColor: `hsl(${hue}, 45%, 22%)` }]}
+      />
+    );
+  };
+
   return (
     <Pressable onPress={onPress} style={styles.card}>
       <Thumbnail seed={post.thumbnail} />
 
       <View style={styles.topRow}>
         <Badge label={post.category.name} variant="info" />
-        {post.isTrending ? <Badge label="Trending" variant="warning" icon="🔥" /> : null}
-        {post.author.verified ? <Badge label="Verified" variant="success" icon="✓" /> : null}
+        {post.isTrending ? (
+          <Badge label="Trending" variant="warning" icon="🔥" />
+        ) : null}
+        {post.author.verified ? (
+          <Badge label="Verified" variant="success" icon="✓" />
+        ) : null}
       </View>
 
       <Text style={styles.title} numberOfLines={2}>
@@ -51,11 +145,19 @@ export function PostCard({ post, onPress }: { post: MockPost; onPress?: () => vo
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
+            <Ionicons
+              name="chatbubble-outline"
+              size={14}
+              color={colors.onSurfaceVariant}
+            />
             <Text style={styles.statText}>{post.commentsCount}</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="heart-outline" size={14} color={colors.textSecondary} />
+            <Ionicons
+              name="heart-outline"
+              size={14}
+              color={colors.onSurfaceVariant}
+            />
             <Text style={styles.statText}>{post.likesCount}</Text>
           </View>
         </View>
@@ -63,84 +165,3 @@ export function PostCard({ post, onPress }: { post: MockPost; onPress?: () => vo
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  thumbnail: {
-    height: 140,
-    borderRadius: radius.md,
-    marginBottom: spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  title: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  description: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.xs,
-  },
-  avatarText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  authorName: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  dot: {
-    color: colors.textMuted,
-    marginHorizontal: 4,
-  },
-  time: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-});

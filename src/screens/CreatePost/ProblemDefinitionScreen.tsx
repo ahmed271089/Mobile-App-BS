@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,17 +8,47 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { colors, radius, spacing, typography } from '../../theme';
-import { Input } from '../../components/Input';
-import { Button } from '../../components/Button';
-import { Badge } from '../../components/Badge';
-import { getCategories, previewPostAnalysis } from '../../api/posts';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useColors, radius, spacing, typography } from "../../theme";
+import { Input } from "../../components/Input";
+import { Button } from "../../components/Button";
+import { Badge } from "../../components/Badge";
+import { getCategories, previewPostAnalysis } from "../../api/posts";
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+function StepIndicator({
+  current,
+  total,
+  colors,
+}: {
+  current: number;
+  total: number;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const stepStyles = React.useMemo(
+    () => ({
+      wrapper: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        marginBottom: spacing.lg,
+      },
+      dot: { height: 4, borderRadius: 2 },
+      dotActive: { flex: 1, backgroundColor: colors.primary },
+      dotDone: { flex: 1, backgroundColor: colors.primary, opacity: 0.55 },
+      dotInactive: { flex: 1, backgroundColor: colors.outlineVariant },
+      label: {
+        ...typography.caption,
+        color: colors.onSurfaceVariant,
+        marginLeft: 4,
+        flexShrink: 0,
+      },
+    }),
+    [colors],
+  );
+
   return (
     <View style={stepStyles.wrapper}>
       {Array.from({ length: total }).map((_, i) => (
@@ -26,66 +56,213 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           key={i}
           style={[
             stepStyles.dot,
-            i < current ? stepStyles.dotDone : i === current - 1 ? stepStyles.dotActive : stepStyles.dotInactive,
+            i < current
+              ? stepStyles.dotDone
+              : i === current - 1
+                ? stepStyles.dotActive
+                : stepStyles.dotInactive,
           ]}
         />
       ))}
-      <Text style={stepStyles.label}>Step {current} of {total}</Text>
+      <Text style={stepStyles.label}>
+        Step {current} of {total}
+      </Text>
     </View>
   );
 }
-
-const stepStyles = StyleSheet.create({
-  wrapper: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.lg },
-  dot: { height: 4, borderRadius: 2 },
-  dotActive: { flex: 1, backgroundColor: colors.primary },
-  dotDone: { flex: 1, backgroundColor: colors.primary, opacity: 0.55 },
-  dotInactive: { flex: 1, backgroundColor: colors.cardBorder },
-  label: { ...typography.caption, color: colors.textSecondary, marginLeft: 4, flexShrink: 0 },
-});
 
 type PickedImage = { uri: string; mimeType: string; fileName: string };
 
 export default function ProblemDefinitionScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
-  const { type } = route.params ?? { type: 'PROBLEM' };
+  const colors = useColors();
+  const { type } = route.params ?? { type: "PROBLEM" };
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
+  const [categories, setCategories] = useState<
+    { id: string; name: string; icon: string | null }[]
+  >([]);
   const [images, setImages] = useState<PickedImage[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
+
+  const styles = React.useMemo(
+    () => ({
+      container: { paddingHorizontal: spacing.lg },
+      header: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        marginBottom: spacing.xl,
+      },
+      closeBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceContainer,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      headerTitle: { ...typography.h3, color: colors.onSurface },
+      label: {
+        ...typography.caption,
+        color: colors.onSurfaceVariant,
+        marginBottom: spacing.sm,
+      },
+      categoryGrid: {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
+      },
+      categoryPill: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        backgroundColor: colors.surfaceContainer,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+        borderRadius: 999,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+      },
+      categoryPillSelected: {
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryContainer,
+      },
+      categoryPillLabel: { ...typography.caption, color: colors.onSurface },
+      thumbRow: { marginBottom: spacing.sm },
+      thumbWrap: {
+        position: "relative" as const,
+        width: 84,
+        height: 84,
+        borderRadius: radius.md,
+        overflow: "visible" as const,
+      },
+      thumb: {
+        width: 84,
+        height: 84,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+      },
+      thumbRemove: {
+        position: "absolute" as const,
+        top: -8,
+        right: -8,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+      },
+      mediaBox: {
+        height: 100,
+        borderWidth: 1.5,
+        borderColor: colors.primary,
+        borderStyle: "dashed" as const,
+        borderRadius: radius.lg,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        gap: 4,
+        marginBottom: spacing.lg,
+        backgroundColor: colors.primaryContainer,
+      },
+      mediaText: { ...typography.bodyBold, color: colors.primary },
+      mediaHint: { ...typography.caption, color: colors.onSurfaceVariant },
+      aiCard: {
+        backgroundColor: `${colors.primaryContainer}33`,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.primaryContainer,
+        padding: spacing.lg,
+        marginBottom: spacing.md,
+      },
+      aiHeader: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
+      },
+      aiTitle: { ...typography.h3, color: colors.onSurface },
+      aiDesc: {
+        ...typography.caption,
+        color: colors.onSurfaceVariant,
+        lineHeight: 16,
+        marginBottom: spacing.md,
+      },
+      suggestionsBox: { gap: spacing.sm },
+      suggestedDetailsLabel: {
+        ...typography.bodyBold,
+        color: colors.onSurface,
+        marginBottom: 4,
+      },
+      suggestionRow: {
+        flexDirection: "row" as const,
+        gap: spacing.sm,
+        alignItems: "flex-start" as const,
+      },
+      suggestionDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.primary,
+        marginTop: 6,
+      },
+      suggestionText: {
+        ...typography.caption,
+        color: colors.onSurfaceVariant,
+        flex: 1,
+        lineHeight: 16,
+      },
+    }),
+    [colors],
+  );
 
   useEffect(() => {
     getCategories().then(setCategories).catch(console.warn);
   }, []);
 
-  const handlePickImage = async (source: 'library' | 'camera') => {
-    if (source === 'camera') {
+  const handlePickImage = async (source: "library" | "camera") => {
+    if (source === "camera") {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Camera access is needed to take a photo.');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera access is needed to take a photo.",
+        );
         return;
       }
     } else {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Photo library access is needed to select images.');
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Photo library access is needed to select images.",
+        );
         return;
       }
     }
 
     const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: true, aspect: [4, 3] })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsMultipleSelection: true, selectionLimit: 5 - images.length });
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ["images"],
+            quality: 0.85,
+            allowsEditing: true,
+            aspect: [4, 3],
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            quality: 0.85,
+            allowsMultipleSelection: true,
+            selectionLimit: 5 - images.length,
+          });
 
     if (!result.canceled && result.assets.length > 0) {
       const newImages = result.assets.map((a) => ({
         uri: a.uri,
-        mimeType: a.mimeType ?? 'image/jpeg',
+        mimeType: a.mimeType ?? "image/jpeg",
         fileName: a.fileName ?? `photo-${Date.now()}.jpg`,
       }));
       setImages((prev) => [...prev, ...newImages].slice(0, 5));
@@ -94,13 +271,13 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
 
   const handleShowImagePicker = () => {
     if (images.length >= 5) {
-      Alert.alert('Limit reached', 'You can attach up to 5 images per post.');
+      Alert.alert("Limit reached", "You can attach up to 5 images per post.");
       return;
     }
-    Alert.alert('Add Photo', 'Choose a source', [
-      { text: 'Take a Photo', onPress: () => handlePickImage('camera') },
-      { text: 'Photo Library', onPress: () => handlePickImage('library') },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Add Photo", "Choose a source", [
+      { text: "Take a Photo", onPress: () => handlePickImage("camera") },
+      { text: "Photo Library", onPress: () => handlePickImage("library") },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -108,16 +285,28 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
     if (!title || !description || !categoryId) return;
     setAiLoading(true);
     try {
-      const result = await previewPostAnalysis({ categoryId, title, description });
-      if (Array.isArray(result.suggestedSolutions) && result.suggestedSolutions.length > 0) {
+      const result = await previewPostAnalysis({
+        categoryId,
+        title,
+        description,
+      });
+      if (
+        Array.isArray(result.suggestedSolutions) &&
+        result.suggestedSolutions.length > 0
+      ) {
         setAiSuggestions(result.suggestedSolutions);
       } else if (result.diagnosis) {
         setAiSuggestions([result.diagnosis]);
       } else {
-        setAiSuggestions(['AI analysis is temporarily unavailable. You can still post without suggestions.']);
+        setAiSuggestions([
+          "AI analysis is temporarily unavailable. You can still post without suggestions.",
+        ]);
       }
     } catch {
-      Alert.alert('AI unavailable', 'Could not reach the AI agent. You can still post without suggestions.');
+      Alert.alert(
+        "AI unavailable",
+        "Could not reach the AI agent. You can still post without suggestions.",
+      );
     } finally {
       setAiLoading(false);
     }
@@ -126,39 +315,96 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
   const canGoNext = !!title && !!description && !!categoryId;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.surface }}
+      contentContainerStyle={{ paddingBottom: spacing.xxl }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.closeBtn}
+          >
             <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>{type === 'PROBLEM' ? 'Problem Definition' : 'Solution Details'}</Text>
+          <Text style={styles.headerTitle}>
+            {type === "PROBLEM" ? "Problem Definition" : "Solution Details"}
+          </Text>
           <View style={{ width: 36 }} />
         </View>
 
-        <StepIndicator current={2} total={3} />
+        <StepIndicator current={2} total={3} colors={colors} />
 
-        <Input label="Title" placeholder={type === 'PROBLEM' ? 'e.g. Samsung Fridge Screen Flickering' : 'e.g. Fixed washing machine not draining'} value={title} onChangeText={setTitle} />
-        <Input label="Description" placeholder={type === 'PROBLEM' ? "Describe the symptoms…" : 'Explain your fix step-by-step…'} value={description} onChangeText={setDescription} multiline numberOfLines={5} style={{ height: 110, textAlignVertical: 'top' }} />
+        <Input
+          label="Title"
+          placeholder={
+            type === "PROBLEM"
+              ? "e.g. Samsung Fridge Screen Flickering"
+              : "e.g. Fixed washing machine not draining"
+          }
+          value={title}
+          onChangeText={setTitle}
+        />
+        <Input
+          label="Description"
+          placeholder={
+            type === "PROBLEM"
+              ? "Describe the symptoms…"
+              : "Explain your fix step-by-step…"
+          }
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={5}
+          style={{ height: 110, textAlignVertical: "top" }}
+        />
 
         <Text style={styles.label}>Category</Text>
         <View style={styles.categoryGrid}>
           {categories.map((c) => (
-            <Pressable key={c.id} onPress={() => setCategoryId(c.id)} style={[styles.categoryPill, categoryId === c.id && styles.categoryPillSelected]}>
+            <Pressable
+              key={c.id}
+              onPress={() => setCategoryId(c.id)}
+              style={[
+                styles.categoryPill,
+                categoryId === c.id && styles.categoryPillSelected,
+              ]}
+            >
               <Text>{c.icon}</Text>
-              <Text style={[styles.categoryPillLabel, categoryId === c.id && { color: colors.primary }]}>{c.name}</Text>
+              <Text
+                style={[
+                  styles.categoryPillLabel,
+                  categoryId === c.id && { color: colors.primary },
+                ]}
+              >
+                {c.name}
+              </Text>
             </Pressable>
           ))}
         </View>
 
         <Text style={styles.label}>Attachments ({images.length}/5)</Text>
         {images.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbRow} contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.thumbRow}
+            contentContainerStyle={{
+              gap: spacing.sm,
+              paddingRight: spacing.md,
+            }}
+          >
             {images.map((img) => (
               <View key={img.uri} style={styles.thumbWrap}>
                 <Image source={{ uri: img.uri }} style={styles.thumb} />
-                <Pressable style={styles.thumbRemove} onPress={() => setImages((prev) => prev.filter((u) => u.uri !== img.uri))}>
-                  <Ionicons name="close-circle" size={20} color={colors.white} />
+                <Pressable
+                  style={styles.thumbRemove}
+                  onPress={() =>
+                    setImages((prev) => prev.filter((u) => u.uri !== img.uri))
+                  }
+                >
+                  <Ionicons name="close-circle" size={20} color="#FFFFFF" />
                 </Pressable>
               </View>
             ))}
@@ -167,23 +413,35 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         {images.length < 5 && (
           <Pressable style={styles.mediaBox} onPress={handleShowImagePicker}>
             <Ionicons name="camera-outline" size={24} color={colors.primary} />
-            <Text style={styles.mediaText}>{images.length === 0 ? 'Add photo or video' : 'Add more photos'}</Text>
+            <Text style={styles.mediaText}>
+              {images.length === 0 ? "Add photo or video" : "Add more photos"}
+            </Text>
             <Text style={styles.mediaHint}>Tap to open camera or library</Text>
           </Pressable>
         )}
 
-        {type === 'PROBLEM' && (
+        {type === "PROBLEM" && (
           <View style={styles.aiCard}>
             <View style={styles.aiHeader}>
               <Badge label="AI Agent" variant="info" icon="✨" />
               <Text style={styles.aiTitle}>AI Agent Assistant</Text>
             </View>
-            <Text style={styles.aiDesc}>Get AI suggestions before you share publicly.</Text>
+            <Text style={styles.aiDesc}>
+              Get AI suggestions before you share publicly.
+            </Text>
             {!aiSuggestions ? (
-              <Button label={aiLoading ? 'Analyzing…' : 'Generate Suggestions'} variant="secondary" loading={aiLoading} disabled={!title || !description || !categoryId} onPress={handleGenerateSuggestions} />
+              <Button
+                label={aiLoading ? "Analyzing…" : "Generate Suggestions"}
+                variant="secondary"
+                loading={aiLoading}
+                disabled={!title || !description || !categoryId}
+                onPress={handleGenerateSuggestions}
+              />
             ) : (
               <View style={styles.suggestionsBox}>
-                <Text style={styles.suggestedDetailsLabel}>AI Suggested Details</Text>
+                <Text style={styles.suggestedDetailsLabel}>
+                  AI Suggested Details
+                </Text>
                 {aiSuggestions.map((s, i) => (
                   <View key={i} style={styles.suggestionRow}>
                     <View style={styles.suggestionDot} />
@@ -195,36 +453,21 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
           </View>
         )}
 
-        <Button label="Next: Review & Share" style={{ marginTop: spacing.xl }} disabled={!canGoNext} onPress={() => navigation.navigate('ShareFinalize', { type, title, description, categoryId, images })} />
+        <Button
+          label="Next: Review & Share"
+          style={{ marginTop: spacing.xl }}
+          disabled={!canGoNext}
+          onPress={() =>
+            navigation.navigate("ShareFinalize", {
+              type,
+              title,
+              description,
+              categoryId,
+              images,
+            })
+          }
+        />
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { paddingHorizontal: spacing.lg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { ...typography.h3, color: colors.textPrimary },
-  label: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  categoryPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  categoryPillSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
-  categoryPillLabel: { ...typography.caption, color: colors.textPrimary },
-  thumbRow: { marginBottom: spacing.sm },
-  thumbWrap: { position: 'relative', width: 84, height: 84, borderRadius: radius.md, overflow: 'visible' },
-  thumb: { width: 84, height: 84, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder },
-  thumbRemove: { position: 'absolute', top: -8, right: -8, backgroundColor: colors.bg, borderRadius: 12 },
-  mediaBox: { height: 100, borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: spacing.lg, backgroundColor: colors.primaryMuted },
-  mediaText: { ...typography.bodyBold, color: colors.primary },
-  mediaHint: { ...typography.caption, color: colors.textSecondary },
-  aiCard: { backgroundColor: colors.infoMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primaryMuted, padding: spacing.lg, marginBottom: spacing.md },
-  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  aiTitle: { ...typography.h3, color: colors.textPrimary },
-  aiDesc: { ...typography.caption, color: colors.textSecondary, lineHeight: 16, marginBottom: spacing.md },
-  suggestionsBox: { gap: spacing.sm },
-  suggestedDetailsLabel: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: 4 },
-  suggestionRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
-  suggestionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginTop: 6 },
-  suggestionText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 16 },
-});
