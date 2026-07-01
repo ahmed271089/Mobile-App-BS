@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, typography } from "../../theme";
+import { useColors, spacing, typography } from "../../theme";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import {
   listFriends,
@@ -21,6 +21,7 @@ import {
 
 export default function FriendsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -30,6 +31,83 @@ export default function FriendsScreen({ navigation }: any) {
   useEffect(() => {
     loadFriends();
   }, []);
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        header: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.md,
+          paddingHorizontal: spacing.lg,
+          marginBottom: spacing.lg,
+        },
+        backBtn: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        title: { ...typography.h2, color: colors.onSurface, flex: 1 },
+        empty: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          textAlign: "center",
+          marginTop: spacing.xxl,
+          paddingHorizontal: spacing.xl,
+        },
+        row: {
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.outlineVariant,
+        },
+        avatar: {
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: colors.primaryContainer,
+          alignItems: "center",
+          justifyContent: "center",
+          marginRight: spacing.md,
+        },
+        avatarText: {
+          ...typography.caption,
+          color: colors.primary,
+          fontWeight: "700",
+        },
+        nameContainer: {
+          flex: 1,
+          paddingVertical: spacing.sm,
+        },
+        name: {
+          ...typography.bodyBold,
+          color: colors.onSurface,
+        },
+        actionBtn: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: "center",
+          justifyContent: "center",
+          marginLeft: spacing.xs,
+        },
+        removeActionBtn: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: colors.error,
+          alignItems: "center",
+          justifyContent: "center",
+          marginLeft: spacing.xs,
+        },
+      }),
+    [colors],
+  );
 
   const loadFriends = () => {
     setLoading(true);
@@ -120,13 +198,13 @@ export default function FriendsScreen({ navigation }: any) {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.bg,
+        backgroundColor: colors.surface,
         paddingTop: insets.top + spacing.lg,
       }}
     >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
         </Pressable>
         <Text style={styles.title}>My Friends</Text>
         <Pressable onPress={() => navigation.navigate("AddFriend")}>
@@ -162,7 +240,7 @@ export default function FriendsScreen({ navigation }: any) {
               }
             }}
             style={{
-              backgroundColor: colors.danger,
+              backgroundColor: colors.error,
               padding: 20,
               marginHorizontal: spacing.lg,
               marginBottom: spacing.md,
@@ -261,81 +339,10 @@ export default function FriendsScreen({ navigation }: any) {
         onConfirm={handleConfirmRemove}
         onCancel={handleCancelRemove}
         loading={removing === friendToRemove?.id}
-        confirmColor={colors.danger}
+        confirmColor={colors.error}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: { ...typography.h2, color: colors.textPrimary, flex: 1 },
-  empty: {
-    ...typography.body,
-    color: colors.textMuted,
-    textAlign: "center",
-    marginTop: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primaryMuted,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.md,
-  },
-  avatarText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  nameContainer: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-  },
-  name: {
-    ...typography.bodyBold,
-    color: colors.textPrimary,
-  },
-  actionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: spacing.xs,
-  },
-  removeActionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.danger,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: spacing.xs,
-  },
-});
+// Styles now created dynamically inside component using useMemo

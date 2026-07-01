@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme';
-import { Input } from '../../components/Input';
-import { Button } from '../../components/Button';
-import { saveTokens } from '../../utils/tokenStorage';
-import { useSocket } from '../../api/socket';
-import { api, ApiError } from '../../api/client';
-import { validateRegisterForm } from '../../utils/validation';
+import React, { useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Pressable,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useColors, spacing, typography } from "../../theme";
+import { Input } from "../../components/Input";
+import { Button } from "../../components/Button";
+import { saveTokens } from "../../utils/tokenStorage";
+import { useSocket } from "../../api/socket";
+import { api, ApiError } from "../../api/client";
+import { validateRegisterForm } from "../../utils/validation";
 
 interface AuthResponse {
   accessToken: string;
@@ -27,26 +35,92 @@ function extractErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     try {
       const parsed = JSON.parse(error.message);
-      return Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+      return Array.isArray(parsed.message)
+        ? parsed.message.join(", ")
+        : parsed.message;
     } catch {
       return error.message;
     }
   }
-  return 'Please try again.';
+  return "Please try again.";
 }
 
 export default function RegisterScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const { connect } = useSocket();
-  const [name, setName] = useState('');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const styles = useMemo(
+    () => ({
+      container: {
+        flexGrow: 1,
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing.xl,
+      },
+      backBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceContainer,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        marginBottom: spacing.xl,
+      },
+      title: {
+        ...typography.h1,
+        color: colors.onSurface,
+      },
+      subtitle: {
+        ...typography.body,
+        color: colors.onSurfaceVariant,
+        marginTop: spacing.xs,
+      },
+      fieldError: {
+        ...typography.caption,
+        color: "#DC2626",
+        marginTop: -spacing.sm,
+        marginBottom: spacing.sm,
+      },
+      generalError: {
+        ...typography.body,
+        color: "#DC2626",
+        marginTop: spacing.xs,
+        marginBottom: spacing.sm,
+      },
+      terms: {
+        ...typography.caption,
+        color: colors.onSurfaceVariant,
+        textAlign: "center" as const,
+        marginTop: spacing.lg,
+        lineHeight: 16,
+      },
+      footerText: {
+        ...typography.body,
+        color: colors.onSurfaceVariant,
+        textAlign: "center" as const,
+        marginTop: spacing.xxl,
+      },
+      footerLink: {
+        color: colors.primary,
+        fontWeight: "700" as const,
+      },
+    }),
+    [colors],
+  );
+
   const handleRegister = async () => {
-    const fieldErrors = validateRegisterForm({ name, identifier, password, confirmPassword });
+    const fieldErrors = validateRegisterForm({
+      name,
+      identifier,
+      password,
+      confirmPassword,
+    });
 
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
@@ -60,18 +134,24 @@ export default function RegisterScreen({ navigation }: any) {
     const payload = {
       name: name.trim(),
       password,
-      ...(trimmedIdentifier.includes('@') ? { email: trimmedIdentifier } : { phone: trimmedIdentifier }),
+      ...(trimmedIdentifier.includes("@")
+        ? { email: trimmedIdentifier }
+        : { phone: trimmedIdentifier }),
     };
 
     try {
-      const { accessToken, refreshToken } = await api.post<AuthResponse>('/auth/register', payload, {
-        skipAuth: true,
-      });
+      const { accessToken, refreshToken } = await api.post<AuthResponse>(
+        "/auth/register",
+        payload,
+        {
+          skipAuth: true,
+        },
+      );
 
       await saveTokens(accessToken, refreshToken);
       await connect();
 
-      navigation.navigate('MainTabs');
+      navigation.navigate("MainTabs");
     } catch (error) {
       setErrors({ general: extractErrorMessage(error) });
     } finally {
@@ -81,16 +161,23 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: colors.surface }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + spacing.xl },
+        ]}
+      >
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
         </Pressable>
 
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join the community to solve real-world problems.</Text>
+        <Text style={styles.subtitle}>
+          Join the community to solve real-world problems.
+        </Text>
 
         <View style={{ marginTop: spacing.xl }}>
           <Input
@@ -98,9 +185,17 @@ export default function RegisterScreen({ navigation }: any) {
             placeholder="John Doe"
             value={name}
             onChangeText={setName}
-            icon={<Ionicons name="person-outline" size={18} color={colors.textMuted} />}
+            icon={
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            }
           />
-          {errors.name ? <Text style={styles.fieldError}>{errors.name}</Text> : null}
+          {errors.name ? (
+            <Text style={styles.fieldError}>{errors.name}</Text>
+          ) : null}
 
           <Input
             label="Email or phone number"
@@ -108,9 +203,17 @@ export default function RegisterScreen({ navigation }: any) {
             value={identifier}
             onChangeText={setIdentifier}
             autoCapitalize="none"
-            icon={<Ionicons name="mail-outline" size={18} color={colors.textMuted} />}
+            icon={
+              <Ionicons
+                name="mail-outline"
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            }
           />
-          {errors.identifier ? <Text style={styles.fieldError}>{errors.identifier}</Text> : null}
+          {errors.identifier ? (
+            <Text style={styles.fieldError}>{errors.identifier}</Text>
+          ) : null}
 
           <Input
             label="Password"
@@ -118,9 +221,17 @@ export default function RegisterScreen({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
+            icon={
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            }
           />
-          {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+          {errors.password ? (
+            <Text style={styles.fieldError}>{errors.password}</Text>
+          ) : null}
 
           <Input
             label="Confirm password"
@@ -128,80 +239,41 @@ export default function RegisterScreen({ navigation }: any) {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
-            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
+            icon={
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            }
           />
-          {errors.confirmPassword ? <Text style={styles.fieldError}>{errors.confirmPassword}</Text> : null}
+          {errors.confirmPassword ? (
+            <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
+          ) : null}
 
-          {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
+          {errors.general ? (
+            <Text style={styles.generalError}>{errors.general}</Text>
+          ) : null}
 
-          <Button label="Create Account" onPress={handleRegister} loading={loading} />
+          <Button
+            label="Create Account"
+            onPress={handleRegister}
+            loading={loading}
+          />
 
           <Text style={styles.terms}>
-            By creating an account, you agree to our Terms, Privacy Policy and Conduct guidelines.
+            By creating an account, you agree to our Terms, Privacy Policy and
+            Conduct guidelines.
           </Text>
         </View>
 
-        <Pressable onPress={() => navigation.navigate('Login')}>
+        <Pressable onPress={() => navigation.navigate("Login")}>
           <Text style={styles.footerText}>
-            Already have an account? <Text style={styles.footerLink}>Log in</Text>
+            Already have an account?{" "}
+            <Text style={styles.footerLink}>Log in</Text>
           </Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  fieldError: {
-    ...typography.caption,
-    color: '#DC2626',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  generalError: {
-    ...typography.body,
-    color: '#DC2626',
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  terms: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.lg,
-    lineHeight: 16,
-  },
-  footerText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.xxl,
-  },
-  footerLink: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});

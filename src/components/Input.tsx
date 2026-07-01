@@ -1,6 +1,12 @@
-import React from 'react';
-import { TextInput, View, Text, StyleSheet, TextInputProps } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import React from "react";
+import {
+  TextInput,
+  View,
+  Text,
+  StyleSheet,
+  TextInputProps,
+} from "react-native";
+import { useColors, radius, spacing, typography } from "../theme";
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -8,13 +14,42 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, icon, style, ...rest }: InputProps) {
+  const colors = useColors();
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        label: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+          marginBottom: spacing.xs,
+        },
+        wrapper: {
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.surfaceContainer,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+          borderRadius: radius.md,
+          paddingHorizontal: spacing.md,
+          height: 50,
+        },
+        input: {
+          flex: 1,
+          color: colors.onSurface,
+          ...typography.body,
+        },
+      }),
+    [colors],
+  );
+
   return (
     <View style={{ marginBottom: spacing.lg }}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.wrapper}>
         {icon ? <View style={{ marginRight: spacing.sm }}>{icon}</View> : null}
         <TextInput
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.onSurfaceVariant}
           style={[styles.input, style]}
           {...rest}
         />
@@ -22,26 +57,3 @@ export function Input({ label, icon, style, ...rest }: InputProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  label: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  wrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    height: 50,
-  },
-  input: {
-    flex: 1,
-    color: colors.textPrimary,
-    ...typography.body,
-  },
-});

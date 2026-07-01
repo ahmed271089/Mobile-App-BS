@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing, typography } from "../../theme";
+import { useColors, radius, spacing, typography } from "../../theme";
 import { useSocket } from "../../api/socket";
 import { getMessages, markConversationRead, ChatMessage } from "../../api/chat";
 
@@ -19,6 +19,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const { conversationId, otherUser } = route.params;
   const { socket, connected } = useSocket();
+  const colors = useColors();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -26,6 +27,94 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load history over REST, then join the room for live updates over the socket.
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        header: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.md,
+          paddingHorizontal: spacing.lg,
+          paddingBottom: spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.outlineVariant,
+        },
+        backBtn: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        headerName: {
+          ...typography.bodyBold,
+          color: colors.onSurface,
+        },
+        headerStatus: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+        },
+        bubbleRow: {
+          flexDirection: "row",
+        },
+        bubbleRowMine: {
+          justifyContent: "flex-end",
+        },
+        bubbleRowTheirs: {
+          justifyContent: "flex-start",
+        },
+        bubble: {
+          maxWidth: "78%",
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          borderRadius: radius.lg,
+        },
+        bubbleMine: {
+          backgroundColor: colors.primary,
+        },
+        bubbleTheirs: {
+          backgroundColor: colors.surfaceContainer,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+        },
+        bubbleText: {
+          ...typography.body,
+          color: colors.onSurface,
+        },
+        inputRow: {
+          flexDirection: "row",
+          alignItems: "flex-end",
+          gap: spacing.sm,
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.outlineVariant,
+        },
+        input: {
+          flex: 1,
+          maxHeight: 100,
+          backgroundColor: colors.surfaceContainer,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+          borderRadius: radius.lg,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          color: colors.onSurface,
+          ...typography.body,
+        },
+        sendBtn: {
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          backgroundColor: colors.primary,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+      }),
+    [colors],
+  );
+
   useEffect(() => {
     getMessages(conversationId)
       .then((history) => setMessages(history.reverse())) // backend returns newest-first
@@ -63,8 +152,8 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
   const handleSend = () => {
     if (!draft.trim() || !socket) return;
-    socket.emit('send_message', { conversationId, content: draft.trim() });
-    setDraft('');
+    socket.emit("send_message", { conversationId, content: draft.trim() });
+    setDraft("");
   };
 
   const handleChangeText = (text: string) => {
@@ -74,19 +163,19 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1, backgroundColor: colors.surface }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerName}>
             {otherUser?.name ?? "Conversation"}
           </Text>
           <Text style={styles.headerStatus}>
-            {!connected ? 'Connecting…' : otherTyping ? 'Typing…' : 'Online'}
+            {!connected ? "Connecting…" : otherTyping ? "Typing…" : "Online"}
           </Text>
         </View>
       </View>
@@ -128,98 +217,18 @@ export default function ChatThreadScreen({ navigation, route }: any) {
           value={draft}
           onChangeText={handleChangeText}
           placeholder="Message…"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.onSurfaceVariant}
           style={styles.input}
           multiline
         />
-        <Pressable onPress={handleSend} style={styles.sendBtn} disabled={!draft.trim()}>
+        <Pressable
+          onPress={handleSend}
+          style={styles.sendBtn}
+          disabled={!draft.trim()}
+        >
           <Ionicons name="arrow-up" size={18} color={colors.white} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerName: {
-    ...typography.bodyBold,
-    color: colors.textPrimary,
-  },
-  headerStatus: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  bubbleRow: {
-    flexDirection: "row",
-  },
-  bubbleRowMine: {
-    justifyContent: "flex-end",
-  },
-  bubbleRowTheirs: {
-    justifyContent: "flex-start",
-  },
-  bubble: {
-    maxWidth: "78%",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
-  },
-  bubbleMine: {
-    backgroundColor: colors.primary,
-  },
-  bubbleTheirs: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  bubbleText: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardBorder,
-  },
-  input: {
-    flex: 1,
-    maxHeight: 100,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: colors.textPrimary,
-    ...typography.body,
-  },
-  sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
