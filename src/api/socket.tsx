@@ -1,7 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { SOCKET_BASE_URL } from './config';
-import { getAccessToken } from '../utils/tokenStorage';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { io, Socket } from "socket.io-client";
+import { SOCKET_BASE_URL } from "./config";
+import { getAccessToken } from "../utils/tokenStorage";
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -27,13 +33,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     const newSocket = io(`${SOCKET_BASE_URL}/chat`, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ["websocket"],
     });
 
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
-    newSocket.on('connect_error', (err) => {
-      console.warn('Socket connection error:', err.message);
+    newSocket.on("connect_error", (err) => {
+      console.warn("Socket connection error:", err.message);
       setConnected(false);
     });
 
@@ -61,7 +67,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket, connected, connect, disconnect }}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={{ socket, connected, connect, disconnect }}>
+      {children}
+    </SocketContext.Provider>
   );
 }
 
