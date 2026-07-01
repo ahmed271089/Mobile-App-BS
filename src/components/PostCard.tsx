@@ -7,6 +7,9 @@ import { MockPost } from '../data/mockData';
 
 // Placeholder gradient block standing in for a real thumbnail image.
 function Thumbnail({ seed }: { seed: string }) {
+  if (seed.startsWith('http')) {
+    return <Image source={{ uri: seed }} style={styles.thumbnail} />;
+  }
   const hue = seed.length * 37 % 360;
   return (
     <View

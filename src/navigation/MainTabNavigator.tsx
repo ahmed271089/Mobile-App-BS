@@ -5,7 +5,7 @@ import { CustomTabBar } from './CustomTabBar';
 import HomeStackNavigator from './HomeStackNavigator';
 import LibraryScreen from '../screens/Library/LibraryScreen';
 import ChatStackNavigator from './ChatStackNavigator';
-import ProfileScreen from '../screens/Profile/ProfileScreen';
+import ProfileStackNavigator from './ProfileStackNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,7 +25,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Library" component={LibraryScreen} />
       <Tab.Screen name="CreateTab" component={CreatePlaceholder} />
       <Tab.Screen name="Chat" component={ChatStackNavigator} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
   );
 }

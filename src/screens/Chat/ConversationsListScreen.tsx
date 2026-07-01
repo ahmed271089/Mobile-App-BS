@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme';
 import { listConversations, ConversationSummary } from '../../api/chat';
 
@@ -26,11 +27,24 @@ export default function ConversationsListScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + spacing.lg }}>
-      <Text style={styles.title}>Messages</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Messages</Text>
+        <View style={styles.headerActions}>
+          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('FriendRequests')}>
+            <Ionicons name="mail-unread-outline" size={18} color={colors.textPrimary} />
+          </Pressable>
+          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('AddFriend')}>
+            <Ionicons name="person-add-outline" size={18} color={colors.textPrimary} />
+          </Pressable>
+        </View>
+      </View>
 
       {conversations.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.empty}>No conversations yet. Start one from a user's profile.</Text>
+          <Text style={styles.empty}>No conversations yet.</Text>
+          <Pressable onPress={() => navigation.navigate('Friends')}>
+            <Text style={styles.link}>View friends or add someone</Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -40,18 +54,13 @@ export default function ConversationsListScreen({ navigation }: any) {
           renderItem={({ item }) => {
             const other = item.otherParticipants[0];
             return (
-              <Pressable
-                style={styles.row}
-                onPress={() => navigation.navigate('ChatThread', { conversationId: item.id, otherUser: other })}
-              >
+              <Pressable style={styles.row} onPress={() => navigation.navigate('ChatThread', { conversationId: item.id, otherUser: other })}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>{other?.name?.slice(0, 2).toUpperCase() ?? '??'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{other?.name ?? 'Unknown user'}</Text>
-                  <Text style={styles.preview} numberOfLines={1}>
-                    {item.lastMessage?.content ?? 'Say hello 👋'}
-                  </Text>
+                  <Text style={styles.preview} numberOfLines={1}>{item.lastMessage?.content ?? 'Say hello 👋'}</Text>
                 </View>
               </Pressable>
             );
@@ -63,51 +72,16 @@ export default function ConversationsListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...typography.h2,
-    color: colors.textPrimary,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  empty: {
-    ...typography.body,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  name: {
-    ...typography.bodyBold,
-    color: colors.textPrimary,
-  },
-  preview: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: spacing.lg },
+  headerActions: { flexDirection: 'row', gap: spacing.sm },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  title: { ...typography.h2, color: colors.textPrimary },
+  empty: { ...typography.body, color: colors.textMuted, textAlign: 'center', paddingHorizontal: spacing.xl },
+  link: { ...typography.bodyBold, color: colors.primary, marginTop: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { ...typography.caption, color: colors.primary, fontWeight: '700' },
+  name: { ...typography.bodyBold, color: colors.textPrimary },
+  preview: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 });

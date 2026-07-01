@@ -1,4 +1,19 @@
-import { api } from './client';
+import { api } from "./client";
+
+export interface FriendRequest {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  sender: { id: string; name: string; avatarUrl: string | null };
+  createdAt: string;
+}
+
+export interface FriendUser {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
 
 export interface ConversationSummary {
   id: string;
@@ -18,16 +33,18 @@ export interface ChatMessage {
 }
 
 export function listConversations() {
-  return api.get<ConversationSummary[]>('/conversations');
+  return api.get<ConversationSummary[]>("/conversations");
 }
 
 export function startConversation(otherUserId: string) {
-  return api.post<{ id: string }>('/conversations', { otherUserId });
+  return api.post<{ id: string }>("/conversations", { otherUserId });
 }
 
 export function getMessages(conversationId: string, before?: string) {
-  const query = before ? `?before=${encodeURIComponent(before)}` : '';
-  return api.get<ChatMessage[]>(`/conversations/${conversationId}/messages${query}`);
+  const query = before ? `?before=${encodeURIComponent(before)}` : "";
+  return api.get<ChatMessage[]>(
+    `/conversations/${conversationId}/messages${query}`,
+  );
 }
 
 export function markConversationRead(conversationId: string) {
@@ -35,17 +52,37 @@ export function markConversationRead(conversationId: string) {
 }
 
 export function sendFriendRequest(receiverId: string) {
-  return api.post('/friend-requests', { receiverId });
+  return api.post("/friend-requests", { receiverId });
 }
 
 export function listPendingFriendRequests() {
-  return api.get('/friend-requests/pending');
+  return api.get<FriendRequest[]>("/friend-requests/pending");
 }
 
 export function respondFriendRequest(id: string, accept: boolean) {
-  return api.patch(`/friend-requests/${id}/${accept ? 'accept' : 'reject'}`);
+  return api.patch(`/friend-requests/${id}/${accept ? "accept" : "reject"}`);
 }
 
 export function listFriends() {
-  return api.get('/friends');
+  return api.get<FriendUser[]>("/friends");
+}
+
+export function removeFriend(friendId: string) {
+  console.log("\n=== API CLIENT: removeFriend ===");
+  console.log("Friend ID:", friendId);
+  console.log("URL will be:", `/friends/${friendId}`);
+
+  const result = api.delete(`/friends/${friendId}`);
+
+  result
+    .then((res) => {
+      console.log("API DELETE Success:", res);
+      return res;
+    })
+    .catch((err) => {
+      console.error("API DELETE Error:", err);
+      throw err;
+    });
+
+  return result;
 }

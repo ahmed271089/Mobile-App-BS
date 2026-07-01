@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,12 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme';
-import { useSocket } from '../../api/socket';
-import { getMessages, markConversationRead, ChatMessage } from '../../api/chat';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radius, spacing, typography } from "../../theme";
+import { useSocket } from "../../api/socket";
+import { getMessages, markConversationRead, ChatMessage } from "../../api/chat";
 
 export default function ChatThreadScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -21,7 +21,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   const { socket, connected } = useSocket();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [otherTyping, setOtherTyping] = useState(false);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -29,7 +29,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   useEffect(() => {
     getMessages(conversationId)
       .then((history) => setMessages(history.reverse())) // backend returns newest-first
-      .catch((err) => console.warn('Failed to load messages', err));
+      .catch((err) => console.warn("Failed to load messages", err));
 
     markConversationRead(conversationId).catch(() => {});
   }, [conversationId]);
@@ -37,7 +37,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit('join_conversation', { conversationId });
+    socket.emit("join_conversation", { conversationId });
 
     const onNewMessage = (message: ChatMessage) => {
       if (message.conversationId !== conversationId) return;
@@ -51,13 +51,13 @@ export default function ChatThreadScreen({ navigation, route }: any) {
       typingTimeout.current = setTimeout(() => setOtherTyping(false), 2000);
     };
 
-    socket.on('new_message', onNewMessage);
-    socket.on('typing', onTyping);
+    socket.on("new_message", onNewMessage);
+    socket.on("typing", onTyping);
 
     return () => {
-      socket.emit('leave_conversation', { conversationId });
-      socket.off('new_message', onNewMessage);
-      socket.off('typing', onTyping);
+      socket.emit("leave_conversation", { conversationId });
+      socket.off("new_message", onNewMessage);
+      socket.off("typing", onTyping);
     };
   }, [socket, conversationId]);
 
@@ -69,20 +69,22 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
   const handleChangeText = (text: string) => {
     setDraft(text);
-    socket?.emit('typing', { conversationId });
+    socket?.emit("typing", { conversationId });
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerName}>{otherUser?.name ?? 'Conversation'}</Text>
+          <Text style={styles.headerName}>
+            {otherUser?.name ?? "Conversation"}
+          </Text>
           <Text style={styles.headerStatus}>
             {!connected ? 'Connecting…' : otherTyping ? 'Typing…' : 'Online'}
           </Text>
@@ -96,16 +98,32 @@ export default function ChatThreadScreen({ navigation, route }: any) {
         renderItem={({ item }) => {
           const isMine = item.senderId !== otherUser?.id;
           return (
-            <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
-              <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
-                <Text style={[styles.bubbleText, isMine && { color: colors.white }]}>{item.content}</Text>
+            <View
+              style={[
+                styles.bubbleRow,
+                isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
+              ]}
+            >
+              <View
+                style={[
+                  styles.bubble,
+                  isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                ]}
+              >
+                <Text
+                  style={[styles.bubbleText, isMine && { color: colors.white }]}
+                >
+                  {item.content}
+                </Text>
               </View>
             </View>
           );
         }}
       />
 
-      <View style={[styles.inputRow, { paddingBottom: insets.bottom + spacing.sm }]}>
+      <View
+        style={[styles.inputRow, { paddingBottom: insets.bottom + spacing.sm }]}
+      >
         <TextInput
           value={draft}
           onChangeText={handleChangeText}
@@ -124,8 +142,8 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
@@ -137,8 +155,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerName: {
     ...typography.bodyBold,
@@ -149,16 +167,16 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   bubbleRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   bubbleRowMine: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   bubbleRowTheirs: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   bubble: {
-    maxWidth: '78%',
+    maxWidth: "78%",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
@@ -176,8 +194,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
@@ -201,7 +219,7 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
