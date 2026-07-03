@@ -176,7 +176,11 @@ export default function HomeScreen({ navigation }: any) {
   const loadData = useCallback(async () => {
     try {
       const [trending, solutions, cats] = await Promise.all([
-        getFeed({ trending: true, categoryId: selectedCategory ?? undefined }),
+        getFeed({
+          type: "PROBLEM",
+          trending: true,
+          categoryId: selectedCategory ?? undefined,
+        }),
         getFeed({
           type: "SOLUTION",
           categoryId: selectedCategory ?? undefined,

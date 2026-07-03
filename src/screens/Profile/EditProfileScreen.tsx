@@ -88,7 +88,7 @@ export default function EditProfileScreen({ navigation, route }: any) {
         placeholder="Tell the community about your expertise…"
         multiline
         numberOfLines={4}
-        style={{ height: 100, textAlignVertical: "top" }}
+        style={{ minHeight: 100, textAlignVertical: "top" }}
       />
       <Button
         label="Save changes"

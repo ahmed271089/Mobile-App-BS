@@ -13,7 +13,7 @@ interface InputProps extends TextInputProps {
   icon?: React.ReactNode;
 }
 
-export function Input({ label, icon, style, ...rest }: InputProps) {
+export function Input({ label, icon, style, multiline, ...rest }: InputProps) {
   const colors = useColors();
 
   const styles = React.useMemo(
@@ -26,21 +26,23 @@ export function Input({ label, icon, style, ...rest }: InputProps) {
         },
         wrapper: {
           flexDirection: "row",
-          alignItems: "center",
+          alignItems: multiline ? "flex-start" : "center",
           backgroundColor: colors.surfaceContainer,
           borderWidth: 1,
           borderColor: colors.outlineVariant,
           borderRadius: radius.md,
           paddingHorizontal: spacing.md,
-          height: 50,
+          paddingVertical: multiline ? spacing.md : 0,
+          minHeight: multiline ? 80 : 50,
         },
         input: {
           flex: 1,
           color: colors.onSurface,
           ...typography.body,
+          paddingTop: multiline ? spacing.xs : 0,
         },
       }),
-    [colors],
+    [colors, multiline],
   );
 
   return (
@@ -51,6 +53,7 @@ export function Input({ label, icon, style, ...rest }: InputProps) {
         <TextInput
           placeholderTextColor={colors.onSurfaceVariant}
           style={[styles.input, style]}
+          multiline={multiline}
           {...rest}
         />
       </View>

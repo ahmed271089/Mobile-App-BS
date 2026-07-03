@@ -329,6 +329,9 @@ export default function PostDetailScreen({ navigation, route }: any) {
               <View style={styles.commentMeta}>
                 <Text style={styles.commentAuthor}>{c.author.name}</Text>
                 {c.isAIComment && <Badge label="AI" variant="info" />}
+                {post.solvedCommentId === c.id && (
+                  <Badge label="Solution" variant="success" icon="✓" />
+                )}
                 <Text style={styles.commentTime}>
                   {formatRelativeTime(c.createdAt)}
                 </Text>

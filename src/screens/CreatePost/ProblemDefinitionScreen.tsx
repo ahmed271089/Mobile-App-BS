@@ -71,7 +71,12 @@ function StepIndicator({
   );
 }
 
-type PickedImage = { uri: string; mimeType: string; fileName: string };
+type PickedMedia = {
+  uri: string;
+  mimeType: string;
+  fileName: string;
+  type?: "image" | "video";
+};
 
 export default function ProblemDefinitionScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -84,7 +89,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
   const [categories, setCategories] = useState<
     { id: string; name: string; icon: string | null }[]
   >([]);
-  const [images, setImages] = useState<PickedImage[]>([]);
+  const [images, setImages] = useState<PickedMedia[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
 
@@ -155,6 +160,17 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         backgroundColor: colors.surface,
         borderRadius: 12,
       },
+      videoIndicator: {
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        borderRadius: radius.md,
+      },
       mediaBox: {
         height: 100,
         borderWidth: 1.5,
@@ -222,13 +238,23 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
     getCategories().then(setCategories).catch(console.warn);
   }, []);
 
-  const handlePickImage = async (source: "library" | "camera") => {
-    if (source === "camera") {
+  const handlePickImage = async (source: "camera-photo" | "camera-video" | "library") => {
+    if (source === "camera-photo") {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
           "Permission required",
           "Camera access is needed to take a photo.",
+        );
+        return;
+      }
+    } else if (source === "camera-video") {
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: micStatus } = await ImagePicker.requestMicrophonePermissionsAsync();
+      if (cameraStatus !== "granted" || micStatus !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera and microphone access are needed to record a video.",
         );
         return;
       }
@@ -245,27 +271,41 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
     }
 
     const result =
-      source === "camera"
+      source === "camera-photo"
         ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ["images"],
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.85,
             allowsEditing: true,
             aspect: [4, 3],
           })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            quality: 0.85,
-            allowsMultipleSelection: true,
-            selectionLimit: 5 - images.length,
-          });
+        : source === "camera-video"
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+              quality: 0.85,
+              allowsEditing: false,
+              videoMaxDuration: 60, // Max 60 seconds for videos
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.All,
+              quality: 0.85,
+              allowsMultipleSelection: true,
+              selectionLimit: 5 - images.length,
+              videoMaxDuration: 60, // Max 60 seconds for videos
+            });
 
     if (!result.canceled && result.assets.length > 0) {
-      const newImages = result.assets.map((a) => ({
-        uri: a.uri,
-        mimeType: a.mimeType ?? "image/jpeg",
-        fileName: a.fileName ?? `photo-${Date.now()}.jpg`,
-      }));
-      setImages((prev) => [...prev, ...newImages].slice(0, 5));
+      const newMedia = result.assets.map((a) => {
+        const isVideo = a.type === "video" || a.mimeType?.startsWith("video/");
+        return {
+          uri: a.uri,
+          mimeType: a.mimeType ?? (isVideo ? "video/mp4" : "image/jpeg"),
+          fileName:
+            a.fileName ??
+            `${isVideo ? "video" : "photo"}-${Date.now()}.${isVideo ? "mp4" : "jpg"}`,
+          type: isVideo ? ("video" as const) : ("image" as const),
+        };
+      });
+      setImages((prev) => [...prev, ...newMedia].slice(0, 5));
     }
   };
 
@@ -274,9 +314,10 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
       Alert.alert("Limit reached", "You can attach up to 5 images per post.");
       return;
     }
-    Alert.alert("Add Photo", "Choose a source", [
-      { text: "Take a Photo", onPress: () => handlePickImage("camera") },
-      { text: "Photo Library", onPress: () => handlePickImage("library") },
+    Alert.alert("Add Media", "Choose a source", [
+      { text: "Take a Photo", onPress: () => handlePickImage("camera-photo") },
+      { text: "Record a Video", onPress: () => handlePickImage("camera-video") },
+      { text: "Photo & Video Library", onPress: () => handlePickImage("library") },
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -357,7 +398,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
           onChangeText={setDescription}
           multiline
           numberOfLines={5}
-          style={{ height: 110, textAlignVertical: "top" }}
+          style={{ minHeight: 110, textAlignVertical: "top" }}
         />
 
         <Text style={styles.label}>Category</Text>
@@ -395,16 +436,29 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
               paddingRight: spacing.md,
             }}
           >
-            {images.map((img) => (
-              <View key={img.uri} style={styles.thumbWrap}>
-                <Image source={{ uri: img.uri }} style={styles.thumb} />
+            {images.map((media) => (
+              <View key={media.uri} style={styles.thumbWrap}>
+                <Image source={{ uri: media.uri }} style={styles.thumb} />
+                {media.type === "video" && (
+                  <View style={styles.videoIndicator}>
+                    <Ionicons
+                      name="play-circle"
+                      size={32}
+                      color={colors.white}
+                    />
+                  </View>
+                )}
                 <Pressable
                   style={styles.thumbRemove}
                   onPress={() =>
-                    setImages((prev) => prev.filter((u) => u.uri !== img.uri))
+                    setImages((prev) => prev.filter((u) => u.uri !== media.uri))
                   }
                 >
-                  <Ionicons name="close-circle" size={20} color="#FFFFFF" />
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={colors.white}
+                  />
                 </Pressable>
               </View>
             ))}
