@@ -68,15 +68,18 @@ export default function ChatThreadScreen({ navigation, route }: any) {
           maxWidth: "78%",
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
-          borderRadius: radius.lg,
         },
         bubbleMine: {
           backgroundColor: colors.primary,
+          borderRadius: radius.lg,
+          borderBottomRightRadius: 4,
         },
         bubbleTheirs: {
           backgroundColor: colors.surfaceContainer,
           borderWidth: 1,
           borderColor: colors.outlineVariant,
+          borderRadius: radius.lg,
+          borderBottomLeftRadius: 4,
         },
         bubbleText: {
           ...typography.body,
@@ -110,6 +113,25 @@ export default function ChatThreadScreen({ navigation, route }: any) {
           backgroundColor: colors.primary,
           alignItems: "center",
           justifyContent: "center",
+        },
+        sendBtnDisabled: {
+          opacity: 0.4,
+        },
+        timestamp: {
+          ...typography.caption,
+          fontSize: 10,
+          color: colors.onSurfaceVariant,
+          marginTop: 2,
+        },
+        timestampMine: {
+          textAlign: "right",
+        },
+        typingText: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+          fontStyle: "italic",
+          paddingHorizontal: spacing.lg,
+          paddingBottom: spacing.xs,
         },
       }),
     [colors],
@@ -186,29 +208,51 @@ export default function ChatThreadScreen({ navigation, route }: any) {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
         renderItem={({ item }) => {
           const isMine = item.senderId !== otherUser?.id;
+          const time = item.createdAt
+            ? new Date(item.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : null;
           return (
-            <View
-              style={[
-                styles.bubbleRow,
-                isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
-              ]}
-            >
+            <View>
               <View
                 style={[
-                  styles.bubble,
-                  isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                  styles.bubbleRow,
+                  isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
                 ]}
               >
-                <Text
-                  style={[styles.bubbleText, isMine && { color: colors.white }]}
+                <View
+                  style={[
+                    styles.bubble,
+                    isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                  ]}
                 >
-                  {item.content}
-                </Text>
+                  <Text
+                    style={[styles.bubbleText, isMine && { color: colors.white }]}
+                  >
+                    {item.content}
+                  </Text>
+                </View>
               </View>
+              {time && (
+                <Text
+                  style={[
+                    styles.timestamp,
+                    isMine && styles.timestampMine,
+                  ]}
+                >
+                  {time}
+                </Text>
+              )}
             </View>
           );
         }}
       />
+
+      {otherTyping && (
+        <Text style={styles.typingText}>{otherUser?.name ?? "They"} typing…</Text>
+      )}
 
       <View
         style={[styles.inputRow, { paddingBottom: insets.bottom + spacing.sm }]}
@@ -223,7 +267,10 @@ export default function ChatThreadScreen({ navigation, route }: any) {
         />
         <Pressable
           onPress={handleSend}
-          style={styles.sendBtn}
+          style={[
+            styles.sendBtn,
+            !draft.trim() && styles.sendBtnDisabled,
+          ]}
           disabled={!draft.trim()}
         >
           <Ionicons name="arrow-up" size={18} color={colors.white} />

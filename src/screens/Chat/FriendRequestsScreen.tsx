@@ -116,7 +116,15 @@ export default function FriendRequestsScreen({ navigation }: any) {
           style={{ marginTop: spacing.xl }}
         />
       ) : requests.length === 0 ? (
-        <Text style={styles.empty}>No pending friend requests.</Text>
+        <View style={{ alignItems: "center", marginTop: spacing.xxl }}>
+          <Ionicons
+            name="mail-open-outline"
+            size={48}
+            color={colors.outlineVariant}
+            style={{ marginBottom: spacing.md }}
+          />
+          <Text style={styles.empty}>No pending friend requests.</Text>
+        </View>
       ) : (
         <FlatList
           data={requests}

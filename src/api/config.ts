@@ -20,4 +20,5 @@ function resolveHost(): string {
 }
 
 export const API_BASE_URL = `http://${resolveHost()}:${PORT}/api`;
+export const UPLOADS_BASE_URL = `http://${resolveHost()}:${PORT}`;
 export const SOCKET_BASE_URL = `http://${resolveHost()}:${PORT}`;

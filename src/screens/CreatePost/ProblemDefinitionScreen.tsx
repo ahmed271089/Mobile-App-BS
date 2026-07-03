@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -157,8 +158,12 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         position: "absolute" as const,
         top: -8,
         right: -8,
-        backgroundColor: colors.surface,
-        borderRadius: 12,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: colors.error,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
       },
       videoIndicator: {
         position: "absolute" as const,
@@ -314,6 +319,14 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
       Alert.alert("Limit reached", "You can attach up to 5 images per post.");
       return;
     }
+    
+    if (Platform.OS === "web") {
+      // Alert.alert with custom buttons is not supported on web.
+      // The web file picker naturally allows picking files or taking photos if on mobile web.
+      handlePickImage("library");
+      return;
+    }
+
     Alert.alert("Add Media", "Choose a source", [
       { text: "Take a Photo", onPress: () => handlePickImage("camera-photo") },
       { text: "Record a Video", onPress: () => handlePickImage("camera-video") },
@@ -367,7 +380,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
             onPress={() => navigation.goBack()}
             style={styles.closeBtn}
           >
-            <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+            <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
           </Pressable>
           <Text style={styles.headerTitle}>
             {type === "PROBLEM" ? "Problem Definition" : "Solution Details"}
@@ -455,8 +468,8 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
                   }
                 >
                   <Ionicons
-                    name="close-circle"
-                    size={20}
+                    name="close"
+                    size={14}
                     color={colors.white}
                   />
                 </Pressable>

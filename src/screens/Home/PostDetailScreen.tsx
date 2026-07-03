@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,9 +20,11 @@ import {
   markPostSolved,
   toggleLikePost,
   toggleFavoritePost,
+  deletePost,
 } from "../../api/posts";
 import { createComment, ApiComment } from "../../api/comments";
 import { createReport } from "../../api/reports";
+import { getMe, ApiUser } from "../../api/users";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
 
 export default function PostDetailScreen({ navigation, route }: any) {
@@ -34,6 +37,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
 
   const styles = React.useMemo(
     () =>
@@ -151,15 +155,17 @@ export default function PostDetailScreen({ navigation, route }: any) {
     [colors],
   );
 
-  const loadPost = () => {
+  const loadData = () => {
     if (!id) return;
-    getPost(id)
-      .then(setPost)
-      .catch((err) => console.warn("Failed to load post", err))
+    Promise.all([
+      getPost(id).then(setPost),
+      getMe().then(setCurrentUser).catch(() => null),
+    ])
+      .catch((err) => console.warn("Failed to load post data", err))
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadPost, [id]);
+  useEffect(loadData, [id]);
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !id) return;
@@ -167,7 +173,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
     try {
       await createComment(id, commentText.trim());
       setCommentText("");
-      loadPost();
+      loadData();
     } catch (err) {
       Alert.alert("Error", "Could not post comment.");
     } finally {
@@ -175,24 +181,33 @@ export default function PostDetailScreen({ navigation, route }: any) {
     }
   };
 
-  const handleMarkSolved = async () => {
-    const humanComments = (post?.comments ?? []).filter(
-      (c: ApiComment) => !c.isAIComment,
-    );
-    if (humanComments.length === 0) {
+  const handleMarkSolved = async (commentId?: string) => {
+    const comments = post?.comments ?? [];
+    const targetCommentId = (typeof commentId === "string" && commentId) 
+      ? commentId 
+      : comments[comments.length - 1]?.id;
+    
+    if (!targetCommentId) {
       Alert.alert(
         "No comments",
-        "Wait for a community reply before marking as solved.",
+        "Wait for a reply before marking as solved.",
       );
       return;
     }
-    const best = humanComments[humanComments.length - 1];
+    
     try {
-      await markPostSolved(id, best.id);
-      loadPost();
+      await markPostSolved(id, targetCommentId);
+      loadData();
       Alert.alert("Solved!", "This problem has been marked as solved.");
-    } catch {
-      Alert.alert("Error", "Could not mark as solved.");
+    } catch (err: any) {
+      let msg = "Could not mark as solved.";
+      try {
+        const body = JSON.parse(err.message);
+        msg = body.message || msg;
+      } catch {
+        msg = err.message || msg;
+      }
+      Alert.alert("Error", msg);
     }
   };
 
@@ -245,6 +260,33 @@ export default function PostDetailScreen({ navigation, route }: any) {
     }
   };
 
+  const handleDeletePost = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm("Are you sure you want to delete this post?")) {
+        deletePost(id)
+          .then(() => navigation.goBack())
+          .catch(() => Alert.alert("Error", "Could not delete post."));
+      }
+      return;
+    }
+
+    Alert.alert("Delete Post", "Are you sure you want to delete this post?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deletePost(id);
+            navigation.goBack();
+          } catch {
+            Alert.alert("Error", "Could not delete post.");
+          }
+        },
+      },
+    ]);
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
@@ -285,6 +327,11 @@ export default function PostDetailScreen({ navigation, route }: any) {
               color={favorited ? colors.primary : colors.onSurfaceVariant}
             />
           </Pressable>
+          {currentUser?.id === post.author.id && (
+            <Pressable style={styles.backBtn} onPress={handleDeletePost}>
+              <Ionicons name="trash-outline" size={18} color={colors.error} />
+            </Pressable>
+          )}
           <Pressable style={styles.backBtn} onPress={handleReport}>
             <Ionicons
               name="flag-outline"
@@ -337,6 +384,18 @@ export default function PostDetailScreen({ navigation, route }: any) {
                 </Text>
               </View>
               <Text style={styles.commentText}>{c.content}</Text>
+              {post.status !== "SOLVED" &&
+                post.type === "PROBLEM" &&
+                currentUser?.id === post.author.id && (
+                  <Pressable
+                    onPress={() => handleMarkSolved(c.id)}
+                    style={{ marginTop: spacing.sm, alignSelf: "flex-start" }}
+                  >
+                    <Text style={{ ...typography.caption, color: colors.primary, fontWeight: "600" }}>
+                      Mark as Solution
+                    </Text>
+                  </Pressable>
+                )}
             </View>
           </View>
         ))}
@@ -359,12 +418,12 @@ export default function PostDetailScreen({ navigation, route }: any) {
           </Pressable>
         </View>
 
-        {post.status !== "SOLVED" && post.type === "PROBLEM" && (
+        {post.status !== "SOLVED" && post.type === "PROBLEM" && currentUser?.id === post.author.id && (
           <Button
             label="Mark as Solved"
             variant="secondary"
             style={{ marginTop: spacing.xl }}
-            onPress={handleMarkSolved}
+            onPress={() => handleMarkSolved()}
           />
         )}
       </View>

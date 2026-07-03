@@ -58,9 +58,9 @@ function StepIndicator({
           key={i}
           style={[
             stepStyles.dot,
-            i < current
+            i + 1 < current
               ? stepStyles.dotDone
-              : i === current - 1
+              : i + 1 === current
                 ? stepStyles.dotActive
                 : stepStyles.dotInactive,
           ]}
@@ -172,7 +172,11 @@ export default function ChooseTypeScreen({ navigation }: any) {
       </Text>
 
       <Pressable
-        style={[styles.option, selected === "PROBLEM" && styles.optionSelected]}
+        style={({ pressed }) => [
+          styles.option,
+          selected === "PROBLEM" && styles.optionSelected,
+          pressed && { opacity: 0.85 },
+        ]}
         onPress={() => setSelected("PROBLEM")}
       >
         <View
@@ -196,9 +200,10 @@ export default function ChooseTypeScreen({ navigation }: any) {
       </Pressable>
 
       <Pressable
-        style={[
+        style={({ pressed }) => [
           styles.option,
           selected === "SOLUTION" && styles.optionSelected,
+          pressed && { opacity: 0.85 },
         ]}
         onPress={() => setSelected("SOLUTION")}
       >

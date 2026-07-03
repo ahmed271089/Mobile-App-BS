@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme';
+import { useColors, spacing, typography } from '../../theme';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { ApiError } from '../../api/client';
@@ -28,10 +28,76 @@ function extractErrorMessage(error: unknown): string {
 
 export default function ForgotPasswordScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [sent, setSent] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexGrow: 1,
+          paddingHorizontal: spacing.xl,
+          paddingBottom: spacing.xl,
+        },
+        centered: {
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        successIcon: {
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        },
+        backBtn: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.xl,
+        },
+        title: {
+          ...typography.h1,
+          color: colors.onSurface,
+        },
+        subtitle: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          marginTop: spacing.xs,
+        },
+        fieldError: {
+          ...typography.caption,
+          color: colors.error,
+          marginTop: -spacing.sm,
+          marginBottom: spacing.sm,
+        },
+        generalError: {
+          ...typography.body,
+          color: colors.error,
+          marginTop: spacing.xs,
+          marginBottom: spacing.sm,
+        },
+        footerText: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          textAlign: 'center',
+          marginTop: spacing.xxl,
+        },
+        footerLink: {
+          color: colors.primary,
+          fontWeight: '700',
+        },
+      }),
+    [colors],
+  );
 
   const handleSubmit = async () => {
     const fieldErrors = validateForgotPasswordForm(email);
@@ -58,7 +124,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
 
   if (sent) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl }]}>
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl, backgroundColor: colors.surface }]}>
         <View style={styles.successIcon}>
           <Ionicons name="mail-outline" size={32} color={colors.primary} />
         </View>
@@ -67,7 +133,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           If an account exists for {email.trim()}, we've sent a link to reset your password. It expires in 1 hour.
         </Text>
 
-        <Button label="Back to login" onPress={() => navigation.navigate('Login')} />
+        <Button label="Back to login" onPress={() => navigation.navigate('Login')} style={{ marginTop: spacing.xl, alignSelf: 'stretch' }} />
 
         <Pressable onPress={handleSubmit} disabled={loading} style={{ marginTop: spacing.lg }}>
           <Text style={styles.footerLink}>Didn't get it? Resend</Text>
@@ -78,12 +144,12 @@ export default function ForgotPasswordScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1, backgroundColor: colors.surface }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
         </Pressable>
 
         <Text style={styles.title}>Forgot Password</Text>
@@ -99,7 +165,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            icon={<Ionicons name="mail-outline" size={18} color={colors.textMuted} />}
+            icon={<Ionicons name="mail-outline" size={18} color={colors.onSurfaceVariant} />}
           />
           {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
           {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
@@ -116,64 +182,3 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  fieldError: {
-    ...typography.caption,
-    color: '#DC2626',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  generalError: {
-    ...typography.body,
-    color: '#DC2626',
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  footerText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.xxl,
-  },
-  footerLink: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});

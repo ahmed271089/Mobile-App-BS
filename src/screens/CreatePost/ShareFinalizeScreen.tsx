@@ -55,9 +55,9 @@ function StepIndicator({
           key={i}
           style={[
             stepStyles.dot,
-            i < current
+            i + 1 < current
               ? stepStyles.dotDone
-              : i === current - 1
+              : i + 1 === current
                 ? stepStyles.dotActive
                 : stepStyles.dotInactive,
           ]}

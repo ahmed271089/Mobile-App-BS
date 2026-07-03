@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   TextInput,
   View,
@@ -15,6 +15,7 @@ interface InputProps extends TextInputProps {
 
 export function Input({ label, icon, style, multiline, ...rest }: InputProps) {
   const colors = useColors();
+  const [isFocused, setIsFocused] = useState(false);
 
   const styles = React.useMemo(
     () =>
@@ -24,16 +25,23 @@ export function Input({ label, icon, style, multiline, ...rest }: InputProps) {
           color: colors.onSurfaceVariant,
           marginBottom: spacing.xs,
         },
+        labelFocused: {
+          color: colors.primary,
+        },
         wrapper: {
           flexDirection: "row",
           alignItems: multiline ? "flex-start" : "center",
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: colors.outlineVariant,
           borderRadius: radius.md,
           paddingHorizontal: spacing.md,
           paddingVertical: multiline ? spacing.md : 0,
           minHeight: multiline ? 80 : 50,
+        },
+        wrapperFocused: {
+          borderColor: colors.primary,
+          backgroundColor: colors.surfaceContainerLow,
         },
         input: {
           flex: 1,
@@ -47,13 +55,25 @@ export function Input({ label, icon, style, multiline, ...rest }: InputProps) {
 
   return (
     <View style={{ marginBottom: spacing.lg }}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={styles.wrapper}>
+      {label ? (
+        <Text style={[styles.label, isFocused && styles.labelFocused]}>
+          {label}
+        </Text>
+      ) : null}
+      <View style={[styles.wrapper, isFocused && styles.wrapperFocused]}>
         {icon ? <View style={{ marginRight: spacing.sm }}>{icon}</View> : null}
         <TextInput
-          placeholderTextColor={colors.onSurfaceVariant}
+          placeholderTextColor={colors.outline}
           style={[styles.input, style]}
           multiline={multiline}
+          onFocus={(e) => {
+            setIsFocused(true);
+            rest.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            rest.onBlur?.(e);
+          }}
           {...rest}
         />
       </View>

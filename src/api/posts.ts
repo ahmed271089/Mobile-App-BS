@@ -36,12 +36,16 @@ export function getFeed(params: {
   type?: 'PROBLEM' | 'SOLUTION';
   status?: 'OPEN' | 'SOLVED' | 'CLOSED';
   trending?: boolean;
+  cursor?: string;
+  authorId?: string;
 } = {}) {
   const query = new URLSearchParams();
   if (params.categoryId) query.set('categoryId', params.categoryId);
   if (params.type) query.set('type', params.type);
   if (params.status) query.set('status', params.status);
   if (params.trending) query.set('trending', 'true');
+  if (params.cursor) query.set('cursor', params.cursor);
+  if (params.authorId) query.set('authorId', params.authorId);
   const qs = query.toString();
   return api.get<ApiPost[]>(`/posts${qs ? `?${qs}` : ''}`);
 }
@@ -66,6 +70,10 @@ export function toggleFavoritePost(id: string) {
 
 export function markPostSolved(id: string, solvedCommentId: string) {
   return api.patch(`/posts/${id}/solve`, { solvedCommentId });
+}
+
+export function deletePost(id: string) {
+  return api.delete(`/posts/${id}`);
 }
 
 export function getCategories() {

@@ -82,19 +82,19 @@ export default function LoginScreen({ navigation }: any) {
         },
         fieldError: {
           ...typography.caption,
-          color: "#DC2626",
+          color: colors.error,
           marginTop: -spacing.sm,
           marginBottom: spacing.sm,
         },
         generalError: {
           ...typography.body,
-          color: "#DC2626",
+          color: colors.error,
           marginTop: spacing.xs,
           marginBottom: spacing.sm,
         },
         successText: {
           ...typography.body,
-          color: "#16A34A",
+          color: colors.secondary,
           marginTop: spacing.xs,
           marginBottom: spacing.sm,
         },
@@ -254,8 +254,8 @@ export default function LoginScreen({ navigation }: any) {
           </View>
 
           <View style={styles.socialRow}>
-            <Button label="Google" variant="secondary" style={{ flex: 1 }} />
-            <Button label="Apple" variant="secondary" style={{ flex: 1 }} />
+            <Button label="  Google" variant="secondary" style={{ flex: 1 }} />
+            <Button label="  Apple" variant="secondary" style={{ flex: 1 }} />
           </View>
         </View>
 

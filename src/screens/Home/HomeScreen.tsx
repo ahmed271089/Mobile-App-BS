@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Pressable,
   ActivityIndicator,
   RefreshControl,
@@ -21,14 +21,15 @@ import { MockPost } from "../../data/mockData";
 export default function HomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const [trendingPosts, setTrendingPosts] = useState<MockPost[]>([]);
-  const [recentSolutions, setRecentSolutions] = useState<MockPost[]>([]);
-  const [categories, setCategories] = useState<
-    { id: string; name: string; icon: string | null }[]
-  >([]);
+  
+  const [feedData, setFeedData] = useState<MockPost[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const styles = React.useMemo(
@@ -51,14 +52,6 @@ export default function HomeScreen({ navigation }: any) {
           color: colors.onSurfaceVariant,
           marginTop: 4,
         },
-        notifBadge: {
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: colors.surfaceContainer,
-          alignItems: "center",
-          justifyContent: "center",
-        },
         badge: {
           position: "absolute",
           top: -2,
@@ -80,52 +73,6 @@ export default function HomeScreen({ navigation }: any) {
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           marginBottom: spacing.lg,
-        },
-        searchText: {
-          ...typography.body,
-          color: colors.onSurfaceVariant,
-          flex: 1,
-        },
-        categoryScroll: { marginBottom: spacing.lg },
-        categoryBtn: {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.xs,
-          borderRadius: 20,
-          backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
-          borderColor: colors.outlineVariant,
-          marginRight: spacing.xs,
-        },
-        categoryBtnActive: {
-          backgroundColor: colors.primaryContainer,
-          borderColor: colors.primary,
-        },
-        categoryText: {
-          ...typography.caption,
-          color: colors.onSurfaceVariant,
-          fontWeight: "500",
-        },
-        categoryTextActive: { color: colors.primary, fontWeight: "600" },
-        sectionHeader: {
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: spacing.md,
-        },
-        sectionTitle: { ...typography.h3, color: colors.onSurface },
-        seeAll: {
-          ...typography.caption,
-          color: colors.primary,
-          fontWeight: "600",
-        },
-        section: { marginBottom: spacing.xl },
-        iconBtn: {
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: colors.surfaceContainer,
-          alignItems: "center",
-          justifyContent: "center",
         },
         searchPlaceholder: {
           ...typography.body,
@@ -154,11 +101,30 @@ export default function HomeScreen({ navigation }: any) {
           color: colors.onSurfaceVariant,
           fontWeight: "500",
         },
+        sectionHeader: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: spacing.md,
+          marginTop: spacing.sm,
+        },
+        sectionTitle: { ...typography.h3, color: colors.onSurface },
+        iconBtn: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: "center",
+          justifyContent: "center",
+        },
         empty: {
           ...typography.body,
           color: colors.onSurfaceVariant,
           textAlign: "center",
           marginVertical: spacing.xl,
+        },
+        footerLoading: {
+          marginVertical: spacing.lg,
         },
       }),
     [colors],
@@ -173,32 +139,43 @@ export default function HomeScreen({ navigation }: any) {
     }
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     try {
-      const [trending, solutions, cats] = await Promise.all([
-        getFeed({
-          type: "PROBLEM",
-          trending: true,
-          categoryId: selectedCategory ?? undefined,
-        }),
-        getFeed({
-          type: "SOLUTION",
-          categoryId: selectedCategory ?? undefined,
-        }),
+      const [posts, cats] = await Promise.all([
+        getFeed({ categoryId: selectedCategory ?? undefined }),
         getCategories(),
       ]);
-      setTrendingPosts(trending.map(adaptApiPost));
-      setRecentSolutions(solutions.map(adaptApiPost));
+      setFeedData(posts.map(adaptApiPost));
       setCategories(cats);
+      setHasMore(posts.length >= 20); // backend take is 20
     } catch (err) {
-      console.warn("Failed to load home feed", err);
+      console.warn("Failed to load initial feed", err);
     }
   }, [selectedCategory]);
 
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || feedData.length === 0) return;
+    setLoadingMore(true);
+    
+    const cursor = feedData[feedData.length - 1].id;
+    try {
+      const posts = await getFeed({
+        categoryId: selectedCategory ?? undefined,
+        cursor,
+      });
+      setFeedData((prev) => [...prev, ...posts.map(adaptApiPost)]);
+      setHasMore(posts.length >= 20);
+    } catch (err) {
+      console.warn("Failed to load more feed", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
-    loadData().finally(() => setLoading(false));
-  }, [loadData]);
+    loadInitial().finally(() => setLoading(false));
+  }, [loadInitial]);
 
   useFocusEffect(
     useCallback(() => {
@@ -208,7 +185,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadData(), loadUnreadCount()]);
+    await Promise.all([loadInitial(), loadUnreadCount()]);
     setRefreshing(false);
   };
 
@@ -220,13 +197,93 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
+  const renderHeader = () => (
+    <View>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.greeting}>Best Solving</Text>
+          <Text style={styles.subGreeting}>What needs fixing today?</Text>
+        </View>
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => navigation.navigate("Notifications")}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={20}
+            color={colors.onSurface}
+          />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
+      <Pressable
+        style={styles.searchBar}
+        onPress={() => navigation.navigate("Search")}
+      >
+        <Ionicons name="search" size={16} color={colors.onSurfaceVariant} />
+        <Text style={styles.searchPlaceholder}>
+          Search problems, solutions, experts…
+        </Text>
+      </Pressable>
+
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryRow}
+        data={[{ id: "all", name: "All", icon: null }, ...categories]}
+        keyExtractor={(c) => c.id}
+        renderItem={({ item: c }) => {
+          const isActive =
+            (c.id === "all" && !selectedCategory) || selectedCategory === c.id;
+          return (
+            <Pressable
+              style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(c.id === "all" ? null : c.id)}
+            >
+              {c.icon && <Text style={{ fontSize: 14 }}>{c.icon}</Text>}
+              <Text style={styles.categoryLabel}>{c.name}</Text>
+            </Pressable>
+          );
+        }}
+      />
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
-      <ScrollView
+      <FlatList
         contentContainerStyle={[
           styles.container,
           { paddingTop: insets.top + spacing.lg },
         ]}
+        data={feedData}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            onPress={() => navigation.navigate("PostDetail", { id: item.id })}
+          />
+        )}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <Text style={styles.empty}>No activity found.</Text>
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator style={styles.footerLoading} color={colors.primary} />
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -234,102 +291,9 @@ export default function HomeScreen({ navigation }: any) {
             tintColor={colors.primary}
           />
         }
-      >
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.greeting}>Best Solving</Text>
-            <Text style={styles.subGreeting}>What needs fixing today?</Text>
-          </View>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => navigation.navigate("Notifications")}
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={20}
-              color={colors.onSurface}
-            />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-
-        <Pressable
-          style={styles.searchBar}
-          onPress={() => navigation.navigate("Search")}
-        >
-          <Ionicons name="search" size={16} color={colors.onSurfaceVariant} />
-          <Text style={styles.searchPlaceholder}>
-            Search problems, solutions, experts…
-          </Text>
-        </Pressable>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryRow}
-        >
-          <Pressable
-            style={[
-              styles.categoryChip,
-              !selectedCategory && styles.categoryChipActive,
-            ]}
-            onPress={() => setSelectedCategory(null)}
-          >
-            <Text style={styles.categoryLabel}>All</Text>
-          </Pressable>
-          {categories.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[
-                styles.categoryChip,
-                selectedCategory === c.id && styles.categoryChipActive,
-              ]}
-              onPress={() => setSelectedCategory(c.id)}
-            >
-              <Text style={{ fontSize: 14 }}>{c.icon}</Text>
-              <Text style={styles.categoryLabel}>{c.name}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🔥 Trending Problems</Text>
-        </View>
-        {trendingPosts.length === 0 ? (
-          <Text style={styles.empty}>No trending problems yet.</Text>
-        ) : (
-          trendingPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onPress={() => navigation.navigate("PostDetail", { id: post.id })}
-            />
-          ))
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Solutions</Text>
-        </View>
-        {recentSolutions.length === 0 ? (
-          <Text style={styles.empty}>No solutions posted yet.</Text>
-        ) : (
-          recentSolutions.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onPress={() => navigation.navigate("PostDetail", { id: post.id })}
-            />
-          ))
-        )}
-      </ScrollView>
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+      />
     </View>
   );
 }
-
-// Styles now created dynamically inside component using useMemo

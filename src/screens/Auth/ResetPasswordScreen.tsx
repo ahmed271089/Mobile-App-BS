@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme';
+import { useColors, spacing, typography } from '../../theme';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { ApiError } from '../../api/client';
@@ -32,6 +32,7 @@ function extractErrorMessage(error: unknown): string {
 // route.params.token populated automatically.
 export default function ResetPasswordScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const token: string | undefined = route?.params?.token;
 
   const [password, setPassword] = useState('');
@@ -39,6 +40,54 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexGrow: 1,
+          paddingHorizontal: spacing.xl,
+          paddingBottom: spacing.xl,
+        },
+        centered: {
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        successIcon: {
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: colors.surfaceContainer,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        },
+        title: {
+          ...typography.h1,
+          color: colors.onSurface,
+          marginTop: spacing.md,
+        },
+        subtitle: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          marginTop: spacing.xs,
+          marginBottom: spacing.md,
+        },
+        fieldError: {
+          ...typography.caption,
+          color: colors.error,
+          marginTop: -spacing.sm,
+          marginBottom: spacing.sm,
+        },
+        generalError: {
+          ...typography.body,
+          color: colors.error,
+          marginTop: spacing.xs,
+          marginBottom: spacing.sm,
+        },
+      }),
+    [colors],
+  );
 
   const handleSubmit = async () => {
     if (!token) {
@@ -69,20 +118,20 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
 
   if (!token) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl }]}>
-        <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl, backgroundColor: colors.surface }]}>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
         <Text style={styles.title}>Invalid link</Text>
         <Text style={[styles.subtitle, { textAlign: 'center' }]}>
           This reset link is missing or invalid. Please request a new one.
         </Text>
-        <Button label="Request new link" onPress={() => navigation.navigate('ForgotPassword')} />
+        <Button label="Request new link" onPress={() => navigation.navigate('ForgotPassword')} style={{ alignSelf: 'stretch' }} />
       </View>
     );
   }
 
   if (success) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl }]}>
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.xl, backgroundColor: colors.surface }]}>
         <View style={styles.successIcon}>
           <Ionicons name="checkmark-circle-outline" size={32} color={colors.primary} />
         </View>
@@ -90,14 +139,14 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
         <Text style={[styles.subtitle, { textAlign: 'center' }]}>
           Your password has been reset successfully. You can now log in with your new password.
         </Text>
-        <Button label="Go to login" onPress={() => navigation.navigate('Login')} />
+        <Button label="Go to login" onPress={() => navigation.navigate('Login')} style={{ alignSelf: 'stretch' }} />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1, backgroundColor: colors.surface }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
@@ -111,7 +160,7 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
+            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.onSurfaceVariant} />}
           />
           {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
 
@@ -121,7 +170,7 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
-            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
+            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.onSurfaceVariant} />}
           />
           {errors.confirmPassword ? <Text style={styles.fieldError}>{errors.confirmPassword}</Text> : null}
 
@@ -133,47 +182,3 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary,
-    marginTop: spacing.md,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  fieldError: {
-    ...typography.caption,
-    color: '#DC2626',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  generalError: {
-    ...typography.body,
-    color: '#DC2626',
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-});
