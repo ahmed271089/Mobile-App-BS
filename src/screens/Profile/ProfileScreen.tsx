@@ -1,36 +1,46 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Pressable,
   ActivityIndicator,
   Image,
   Alert,
+  RefreshControl,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useColors, radius, spacing, typography } from "../../theme";
 import { Badge } from "../../components/Badge";
-import { Button } from "../../components/Button";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { clearTokens } from "../../utils/tokenStorage";
 import { useSocket } from "../../api/socket";
-import { getMe, ApiUser } from "../../api/users";
+import { getMe, ApiUser, updateProfile } from "../../api/users";
 import { uploadFile } from "../../api/uploads";
-import { updateProfile } from "../../api/users";
+import { getFeed } from "../../api/posts";
+import { adaptApiPost } from "../../utils/adaptApiPost";
+import { PostCard } from "../../components/PostCard";
+import { MockPost } from "../../data/mockData";
 
 export default function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const colors = useColors(); // Use dynamic colors
+  const colors = useColors();
   const { disconnect } = useSocket();
+  
   const [user, setUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Create dynamic styles based on colors (MUST be before any early returns)
+  // Feed State
+  const [posts, setPosts] = useState<MockPost[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -147,16 +157,65 @@ export default function ProfileScreen({ navigation }: any) {
           marginTop: spacing.lg,
         },
         logoutText: { ...typography.bodyBold, color: colors.error },
+        emptyPosts: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          textAlign: "center",
+          marginVertical: spacing.xl,
+        },
+        footerLoading: {
+          marginVertical: spacing.lg,
+        },
       }),
     [colors],
   );
 
-  useEffect(() => {
-    getMe()
-      .then(setUser)
-      .catch(console.warn)
-      .finally(() => setLoading(false));
+  const loadInitialPosts = async (userId: string) => {
+    try {
+      const feed = await getFeed({ authorId: userId });
+      setPosts(feed.map(adaptApiPost));
+      setHasMorePosts(feed.length >= 20);
+    } catch (err) {
+      console.warn("Failed to load user posts", err);
+    }
+  };
+
+  const loadMorePosts = async () => {
+    if (loadingPosts || !hasMorePosts || posts.length === 0 || !user) return;
+    setLoadingPosts(true);
+    const cursor = posts[posts.length - 1].id;
+    try {
+      const feed = await getFeed({ authorId: user.id, cursor });
+      setPosts((prev) => [...prev, ...feed.map(adaptApiPost)]);
+      setHasMorePosts(feed.length >= 20);
+    } catch (err) {
+      console.warn("Failed to load more posts", err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const loadUserAndPosts = useCallback(async () => {
+    try {
+      const userData = await getMe();
+      setUser(userData);
+      await loadInitialPosts(userData.id);
+    } catch (err) {
+      console.warn(err);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserAndPosts().finally(() => setLoading(false));
+    }, [loadUserAndPosts]),
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadUserAndPosts();
+    setRefreshing(false);
+  };
 
   const handleChangeAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -206,14 +265,8 @@ export default function ProfileScreen({ navigation }: any) {
       .toUpperCase() ?? "??";
   const topCategory = user?.expertise?.[0]?.category.name ?? "Community Member";
 
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + spacing.lg },
-      ]}
-    >
+  const renderHeader = () => (
+    <View>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Profile</Text>
         <Pressable
@@ -223,7 +276,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Ionicons
             name="create-outline"
             size={18}
-            color={colors.textPrimary}
+            color={colors.onSurface}
           />
         </Pressable>
       </View>
@@ -291,7 +344,7 @@ export default function ProfileScreen({ navigation }: any) {
             View friends and start conversations
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
       </Pressable>
       <Pressable
         style={styles.listRow}
@@ -312,7 +365,7 @@ export default function ProfileScreen({ navigation }: any) {
             Accept or decline incoming requests
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
       </Pressable>
       <Pressable
         style={styles.listRow}
@@ -325,7 +378,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Text style={styles.listTitle}>Add Friend</Text>
           <Text style={styles.listDesc}>Search users to connect with</Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
       </Pressable>
 
       <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>
@@ -368,8 +421,47 @@ export default function ProfileScreen({ navigation }: any) {
         <Ionicons name="log-out-outline" size={18} color={colors.error} />
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
-    </ScrollView>
+
+      <Text style={[styles.sectionTitle, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>
+        My Posts
+      </Text>
+    </View>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+      <FlatList
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + spacing.lg },
+        ]}
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            onPress={() => navigation.navigate("PostDetail", { id: item.id })}
+          />
+        )}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <Text style={styles.emptyPosts}>You haven't created any posts yet.</Text>
+        }
+        ListFooterComponent={
+          loadingPosts ? (
+            <ActivityIndicator style={styles.footerLoading} color={colors.primary} />
+          ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+        onEndReached={loadMorePosts}
+        onEndReachedThreshold={0.5}
+      />
+    </View>
   );
 }
-
-// Styles are now created dynamically inside the component using useMemo

@@ -68,7 +68,11 @@ export function Button({
       <Pressable
         onPress={onPress}
         disabled={disabled || loading}
-        style={[{ opacity: disabled ? 0.5 : 1 }, style]}
+        style={({ pressed }) => [
+          { opacity: disabled ? 0.5 : 1 },
+          { transform: [{ scale: pressed && !disabled ? 0.97 : 1 }] },
+          style,
+        ]}
       >
         <LinearGradient colors={gradients.primary} style={styles.base}>
           {loading ? (
@@ -86,10 +90,10 @@ export function Button({
       <Pressable
         onPress={onPress}
         disabled={disabled || loading}
-        style={[
+        style={({ pressed }) => [
           styles.base,
           styles.secondary,
-          { opacity: disabled ? 0.5 : 1 },
+          { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
           style,
         ]}
       >
@@ -106,7 +110,11 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      style={[styles.ghost, style]}
+      style={({ pressed }) => [
+        styles.ghost,
+        { opacity: pressed ? 0.7 : 1 },
+        style,
+      ]}
     >
       <Text style={styles.ghostLabel}>{label}</Text>
     </Pressable>

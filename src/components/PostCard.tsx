@@ -107,13 +107,28 @@ export function PostCard({
     const hue = (seed.length * 37) % 360;
     return (
       <View
-        style={[styles.thumbnail, { backgroundColor: `hsl(${hue}, 45%, 22%)` }]}
-      />
+        style={[
+          styles.thumbnail,
+          {
+            backgroundColor: `hsl(${hue}, 30%, 18%)`,
+            alignItems: "center",
+            justifyContent: "center",
+          },
+        ]}
+      >
+        <Ionicons name="image-outline" size={32} color={`hsl(${hue}, 40%, 45%)`} />
+      </View>
     );
   };
 
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+      ]}
+    >
       <Thumbnail seed={post.thumbnail} />
 
       <View style={styles.topRow}>

@@ -12,6 +12,16 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface LoginPayload {
+  email?: string;
+  phone?: string;
+  password: string;
+}
+
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/login', payload, { skipAuth: true });
+}
+
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
   return api.post<AuthResponse>('/auth/register', payload, { skipAuth: true });
 }

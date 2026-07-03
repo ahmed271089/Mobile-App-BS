@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal,
   View,
@@ -7,14 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { colors, spacing, typography } from "../theme";
-
-const radius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-};
+import { useColors, spacing, typography, radius } from "../theme";
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -37,8 +30,76 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
   loading = false,
-  confirmColor = colors.danger,
+  confirmColor,
 }: ConfirmModalProps) {
+  const colors = useColors();
+  const resolvedConfirmColor = confirmColor ?? colors.error;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        overlay: {
+          flex: 1,
+          backgroundColor: colors.overlay,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: spacing.xl,
+        },
+        modal: {
+          backgroundColor: colors.surfaceContainerHigh,
+          borderRadius: radius.xl,
+          padding: spacing.xl,
+          width: "100%",
+          maxWidth: 400,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+        },
+        title: {
+          ...typography.h3,
+          color: colors.onSurface,
+          marginBottom: spacing.md,
+          textAlign: "center",
+        },
+        message: {
+          ...typography.body,
+          color: colors.onSurfaceVariant,
+          marginBottom: spacing.xl,
+          textAlign: "center",
+          lineHeight: 22,
+        },
+        buttons: {
+          flexDirection: "row",
+          gap: spacing.md,
+        },
+        button: {
+          flex: 1,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          borderRadius: radius.lg,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 48,
+        },
+        cancelButton: {
+          backgroundColor: colors.surfaceContainer,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+        },
+        confirmButton: {
+          backgroundColor: resolvedConfirmColor,
+        },
+        cancelText: {
+          ...typography.bodyBold,
+          color: colors.onSurface,
+        },
+        confirmText: {
+          ...typography.bodyBold,
+          color: colors.white,
+        },
+      }),
+    [colors, resolvedConfirmColor],
+  );
+
   return (
     <Modal
       visible={visible}
@@ -66,11 +127,7 @@ export function ConfirmModal({
 
             <Pressable
               onPress={onConfirm}
-              style={[
-                styles.button,
-                styles.confirmButton,
-                { backgroundColor: confirmColor },
-              ]}
+              style={[styles.button, styles.confirmButton]}
               disabled={loading}
             >
               {loading ? (
@@ -85,64 +142,3 @@ export function ConfirmModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.xl,
-  },
-  modal: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: spacing.xl,
-    width: "100%",
-    maxWidth: 400,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  title: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-    textAlign: "center",
-  },
-  message: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginBottom: spacing.xl,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  buttons: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-  },
-  cancelButton: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  confirmButton: {
-    backgroundColor: colors.danger,
-  },
-  cancelText: {
-    ...typography.bodyBold,
-    color: colors.textPrimary,
-  },
-  confirmText: {
-    ...typography.bodyBold,
-    color: colors.white,
-  },
-});

@@ -83,6 +83,11 @@ export default function LibraryScreen({ navigation }: any) {
         color: colors.onSurface,
         marginBottom: spacing.md,
       },
+      divider: {
+        height: 1,
+        backgroundColor: colors.outlineVariant,
+        marginBottom: spacing.lg,
+      },
       empty: { ...typography.body, color: colors.onSurfaceVariant },
     }),
     [colors],
@@ -167,6 +172,7 @@ export default function LibraryScreen({ navigation }: any) {
         />
       </View>
 
+      <View style={styles.divider} />
       <Text style={styles.sectionTitle}>Recently Solved</Text>
       {solvedPosts.length === 0 ? (
         <Text style={styles.empty}>No solved problems yet.</Text>

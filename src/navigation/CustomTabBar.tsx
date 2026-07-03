@@ -1,16 +1,19 @@
 import React, { useMemo } from "react";
-import { View, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, Platform, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { useColors, gradients } from "../theme";
+import { useColors, gradients, spacing, typography } from "../theme";
 
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Home: "home",
-  Library: "library",
-  Chat: "chatbubbles",
-  Profile: "person",
+const TAB_CONFIG: Record<
+  string,
+  { icon: keyof typeof Ionicons.glyphMap; label: string }
+> = {
+  Home: { icon: "home", label: "Home" },
+  Library: { icon: "library", label: "Library" },
+  Chat: { icon: "chatbubbles", label: "Chat" },
+  Profile: { icon: "person", label: "Profile" },
 };
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -26,12 +29,26 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         backgroundColor: colors.surfaceContainerHigh,
         borderTopWidth: 1,
         borderTopColor: colors.outlineVariant,
-        paddingTop: 10,
+        paddingTop: 8,
       },
       tabItem: {
         flex: 1,
         alignItems: "center" as const,
         justifyContent: "center" as const,
+        paddingVertical: 4,
+      },
+      tabLabel: {
+        fontSize: 10,
+        fontWeight: "500" as const,
+        marginTop: 2,
+        letterSpacing: 0.2,
+      },
+      activeIndicator: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: colors.primary,
+        marginTop: 3,
       },
       centerButton: {
         flex: 1,
@@ -45,6 +62,12 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         borderRadius: 28,
         alignItems: "center" as const,
         justifyContent: "center" as const,
+      },
+      centerLabel: {
+        fontSize: 10,
+        fontWeight: "500" as const,
+        color: colors.onSurfaceVariant,
+        marginTop: 4,
       },
     }),
     [colors],
@@ -77,18 +100,30 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               style={styles.centerButton}
               onPress={() => navigation.navigate("CreatePostStack")}
             >
-              <LinearGradient
-                colors={gradients.primary}
-                style={[styles.centerGradient, shadowStyles]}
-              >
-                <Ionicons name="add" size={28} color={colors.white} />
-              </LinearGradient>
+              {({ pressed }) => (
+                <>
+                  <LinearGradient
+                    colors={gradients.primary}
+                    style={[
+                      styles.centerGradient,
+                      shadowStyles,
+                      { transform: [{ scale: pressed ? 0.92 : 1 }] },
+                    ]}
+                  >
+                    <Ionicons name="add" size={28} color={colors.white} />
+                  </LinearGradient>
+                  <Text style={styles.centerLabel}>Create</Text>
+                </>
+              )}
             </Pressable>
           );
         }
 
         const isFocused = state.index === index;
-        const iconName = ICONS[route.name] ?? "ellipse";
+        const config = TAB_CONFIG[route.name];
+        if (!config) return null;
+
+        const iconName = config.icon;
 
         return (
           <Pressable
@@ -105,6 +140,18 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               size={22}
               color={isFocused ? colors.primary : colors.onSurfaceVariant}
             />
+            <Text
+              style={[
+                styles.tabLabel,
+                {
+                  color: isFocused ? colors.primary : colors.onSurfaceVariant,
+                  fontWeight: isFocused ? "600" : "500",
+                },
+              ]}
+            >
+              {config.label}
+            </Text>
+            {isFocused && <View style={styles.activeIndicator} />}
           </Pressable>
         );
       })}

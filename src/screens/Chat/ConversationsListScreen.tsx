@@ -7,6 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, spacing, typography } from "../../theme";
@@ -77,16 +78,40 @@ export default function ConversationsListScreen({ navigation }: any) {
           color: colors.onSurfaceVariant,
           marginTop: 2,
         },
+        previewUnread: {
+          ...typography.caption,
+          color: colors.onSurface,
+          fontWeight: "600",
+          marginTop: 2,
+        },
+        nameUnread: {
+          ...typography.bodyBold,
+          color: colors.onSurface,
+          fontWeight: "700",
+        },
+        unreadDot: {
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.primary,
+          marginLeft: spacing.sm,
+        },
       }),
     [colors],
   );
 
-  useEffect(() => {
+  const loadConversations = React.useCallback(() => {
     listConversations()
       .then(setConversations)
       .catch((err) => console.warn("Failed to load conversations", err))
       .finally(() => setLoading(false));
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadConversations();
+    }, [loadConversations]),
+  );
 
   if (loading) {
     return (
@@ -132,6 +157,12 @@ export default function ConversationsListScreen({ navigation }: any) {
 
       {conversations.length === 0 ? (
         <View style={styles.center}>
+          <Ionicons
+            name="chatbubbles-outline"
+            size={48}
+            color={colors.outlineVariant}
+            style={{ marginBottom: spacing.md }}
+          />
           <Text style={styles.empty}>No conversations yet.</Text>
           <Pressable onPress={() => navigation.navigate("Friends")}>
             <Text style={styles.link}>View friends or add someone</Text>
@@ -147,6 +178,7 @@ export default function ConversationsListScreen({ navigation }: any) {
           }}
           renderItem={({ item }) => {
             const other = item.otherParticipants[0];
+            const unread = (item.unreadCount ?? 0) > 0;
             return (
               <Pressable
                 style={styles.row}
@@ -163,13 +195,14 @@ export default function ConversationsListScreen({ navigation }: any) {
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>
+                  <Text style={unread ? styles.nameUnread : styles.name}>
                     {other?.name ?? "Unknown user"}
                   </Text>
-                  <Text style={styles.preview} numberOfLines={1}>
+                  <Text style={unread ? styles.previewUnread : styles.preview} numberOfLines={1}>
                     {item.lastMessage?.content ?? "Say hello 👋"}
                   </Text>
                 </View>
+                {unread && <View style={styles.unreadDot} />}
               </Pressable>
             );
           }}

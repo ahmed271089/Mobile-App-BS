@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { API_BASE_URL } from './config';
+import { UPLOADS_BASE_URL } from './config';
 import { getAccessToken } from '../utils/tokenStorage';
 import { ApiError } from './client';
 
@@ -22,15 +22,23 @@ export async function uploadFile(localUri: string, mimeType: string, fileName: s
   const normalizedType = mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
 
   const formData = new FormData();
-  // React Native's fetch/FormData accepts this { uri, name, type } shape directly —
-  // it is NOT a real Blob, but RN's networking layer knows how to read the file at `uri`.
-  formData.append('file', {
-    uri: localUri,
-    name: fileName,
-    type: normalizedType,
-  } as any);
 
-  const res = await fetch(`${API_BASE_URL}/uploads`, {
+  if (Platform.OS === 'web') {
+    // On the web, we must fetch the blob and append it directly.
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append('file', blob, fileName);
+  } else {
+    // React Native's fetch/FormData accepts this { uri, name, type } shape directly —
+    // it is NOT a real Blob, but RN's networking layer knows how to read the file at `uri`.
+    formData.append('file', {
+      uri: localUri,
+      name: fileName,
+      type: normalizedType,
+    } as any);
+  }
+
+  const res = await fetch(`${UPLOADS_BASE_URL}/uploads`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

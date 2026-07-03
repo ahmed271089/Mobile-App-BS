@@ -20,6 +20,7 @@ export interface ConversationSummary {
   isGroup: boolean;
   otherParticipants: { id: string; name: string; avatarUrl: string | null }[];
   lastMessage: { content: string | null; createdAt: string } | null;
+  unreadCount?: number;
 }
 
 export interface ChatMessage {
@@ -68,21 +69,5 @@ export function listFriends() {
 }
 
 export function removeFriend(friendId: string) {
-  console.log("\n=== API CLIENT: removeFriend ===");
-  console.log("Friend ID:", friendId);
-  console.log("URL will be:", `/friends/${friendId}`);
-
-  const result = api.delete(`/friends/${friendId}`);
-
-  result
-    .then((res) => {
-      console.log("API DELETE Success:", res);
-      return res;
-    })
-    .catch((err) => {
-      console.error("API DELETE Error:", err);
-      throw err;
-    });
-
-  return result;
+  return api.delete(`/friends/${friendId}`);
 }

@@ -18,6 +18,32 @@ import {
 } from "../../api/notifications";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
 
+const NOTIFICATION_ICONS: Record<
+  string,
+  { name: keyof typeof Ionicons.glyphMap; color: (c: any) => string }
+> = {
+  MESSAGE: {
+    name: "chatbubble",
+    color: (c) => c.primary,
+  },
+  FRIEND_REQUEST: {
+    name: "person-add",
+    color: (c) => c.tertiary,
+  },
+  COMMENT: {
+    name: "chatbubble-ellipses",
+    color: (c) => c.primary,
+  },
+  SOLVED: {
+    name: "checkmark-circle",
+    color: (c) => c.secondary,
+  },
+  REWARD: {
+    name: "star",
+    color: (c) => c.warning,
+  },
+};
+
 function notificationText(n: AppNotification): string {
   const p = n.payload;
   switch (n.type) {
@@ -72,20 +98,28 @@ export default function NotificationsScreen({ navigation }: any) {
           borderBottomColor: colors.outlineVariant,
         },
         rowUnread: {
-          backgroundColor: colors.primaryContainer,
+          borderLeftWidth: 3,
+          borderLeftColor: colors.primary,
+          paddingLeft: spacing.sm,
+          backgroundColor: `${colors.primaryContainer}40`,
           borderRadius: 8,
           paddingHorizontal: spacing.sm,
           marginBottom: 2,
         },
         iconWrap: {
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          width: 36,
+          height: 36,
+          borderRadius: 18,
           backgroundColor: colors.surfaceContainer,
           alignItems: "center",
           justifyContent: "center",
         },
         body: { ...typography.body, color: colors.onSurface },
+        bodyUnread: {
+          ...typography.body,
+          color: colors.onSurface,
+          fontWeight: "600",
+        },
         time: {
           ...typography.caption,
           color: colors.onSurfaceVariant,
@@ -132,6 +166,14 @@ export default function NotificationsScreen({ navigation }: any) {
     );
   }
 
+  const getNotifIcon = (type: string) => {
+    const config = NOTIFICATION_ICONS[type] ?? {
+      name: "notifications" as keyof typeof Ionicons.glyphMap,
+      color: (c: any) => c.primary,
+    };
+    return config;
+  };
+
   return (
     <View
       style={{
@@ -157,6 +199,12 @@ export default function NotificationsScreen({ navigation }: any) {
 
       {items.length === 0 ? (
         <View style={styles.center}>
+          <Ionicons
+            name="notifications-off-outline"
+            size={48}
+            color={colors.outlineVariant}
+            style={{ marginBottom: spacing.md }}
+          />
           <Text style={styles.empty}>No notifications yet.</Text>
         </View>
       ) : (
@@ -167,26 +215,38 @@ export default function NotificationsScreen({ navigation }: any) {
             paddingHorizontal: spacing.lg,
             paddingBottom: spacing.xl,
           }}
-          renderItem={({ item }) => (
-            <Pressable
-              style={[styles.row, !item.isRead && styles.rowUnread]}
-              onPress={() => handlePress(item)}
-            >
-              <View style={styles.iconWrap}>
-                <Ionicons
-                  name="notifications"
-                  size={16}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.body}>{notificationText(item)}</Text>
-                <Text style={styles.time}>
-                  {formatRelativeTime(item.createdAt)}
-                </Text>
-              </View>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const iconConfig = getNotifIcon(item.type);
+            return (
+              <Pressable
+                style={[styles.row, !item.isRead && styles.rowUnread]}
+                onPress={() => handlePress(item)}
+              >
+                <View
+                  style={[
+                    styles.iconWrap,
+                    !item.isRead && {
+                      backgroundColor: `${iconConfig.color(colors)}20`,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={iconConfig.name}
+                    size={16}
+                    color={iconConfig.color(colors)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={!item.isRead ? styles.bodyUnread : styles.body}>
+                    {notificationText(item)}
+                  </Text>
+                  <Text style={styles.time}>
+                    {formatRelativeTime(item.createdAt)}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>

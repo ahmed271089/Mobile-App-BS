@@ -83,13 +83,13 @@ export default function RegisterScreen({ navigation }: any) {
       },
       fieldError: {
         ...typography.caption,
-        color: "#DC2626",
+        color: colors.error,
         marginTop: -spacing.sm,
         marginBottom: spacing.sm,
       },
       generalError: {
         ...typography.body,
-        color: "#DC2626",
+        color: colors.error,
         marginTop: spacing.xs,
         marginBottom: spacing.sm,
       },
