@@ -118,6 +118,9 @@ export function PostCard({
 
       <View style={styles.topRow}>
         <Badge label={post.category.name} variant="info" />
+        {post.status === "SOLVED" ? (
+          <Badge label="Solved" variant="success" icon="✓" />
+        ) : null}
         {post.isTrending ? (
           <Badge label="Trending" variant="warning" icon="🔥" />
         ) : null}

@@ -15,6 +15,7 @@ export interface ApiPost {
   category: { id: string; name: string; slug: string; icon: string | null };
   attachments: { id: string; type: 'PHOTO' | 'VIDEO'; url: string }[];
   aiAnalysis: { diagnosis: string; suggestedSolutions: string[]; confidenceScore: number } | null;
+  solvedCommentId?: string | null;
   _count?: { comments: number; likes: number };
 }
 
