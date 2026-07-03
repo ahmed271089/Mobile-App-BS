@@ -1,9 +1,10 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, radius, spacing, typography } from "../theme";
 import { Badge } from "./Badge";
 import { MockPost } from "../data/mockData";
+import { createComment } from "../api/comments";
 
 export function PostCard({
   post,
@@ -13,6 +14,27 @@ export function PostCard({
   onPress?: () => void;
 }) {
   const colors = useColors();
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
+
+  useEffect(() => {
+    setLocalCommentsCount(post.commentsCount);
+  }, [post.commentsCount]);
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim()) return;
+    setSubmitting(true);
+    try {
+      await createComment(post.id, commentText.trim());
+      setCommentText("");
+      setLocalCommentsCount((prev) => prev + 1);
+    } catch (err) {
+      Alert.alert("Error", "Could not post comment.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const styles = React.useMemo(
     () =>
@@ -50,6 +72,7 @@ export function PostCard({
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
+          marginBottom: spacing.sm,
         },
         authorRow: {
           flexDirection: "row",
@@ -95,11 +118,41 @@ export function PostCard({
           ...typography.caption,
           color: colors.onSurfaceVariant,
         },
+        commentInputRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          marginTop: spacing.xs,
+          borderTopWidth: 1,
+          borderTopColor: colors.outlineVariant,
+          paddingTop: spacing.sm,
+        },
+        commentInput: {
+          flex: 1,
+          height: 36,
+          backgroundColor: colors.surface,
+          borderRadius: 18,
+          paddingHorizontal: spacing.md,
+          ...typography.body,
+          color: colors.onSurface,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+        },
+        sendBtn: {
+          marginLeft: spacing.sm,
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: colors.primary,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        sendBtnDisabled: {
+          backgroundColor: colors.outlineVariant,
+        },
       }),
     [colors],
   );
 
-  // Placeholder gradient block standing in for a real thumbnail image.
   const Thumbnail = ({ seed }: { seed: string }) => {
     if (seed.startsWith("http")) {
       return <Image source={{ uri: seed }} style={styles.thumbnail} />;
@@ -168,7 +221,7 @@ export function PostCard({
               size={14}
               color={colors.onSurfaceVariant}
             />
-            <Text style={styles.statText}>{post.commentsCount}</Text>
+            <Text style={styles.statText}>{localCommentsCount}</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons
@@ -180,6 +233,42 @@ export function PostCard({
           </View>
         </View>
       </View>
+
+      <Pressable 
+        style={styles.commentInputRow}
+        onPress={(e) => {
+          if (e && e.stopPropagation) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        <TextInput
+          style={styles.commentInput}
+          placeholder="Write a comment..."
+          placeholderTextColor={colors.onSurfaceVariant}
+          value={commentText}
+          onChangeText={setCommentText}
+          onSubmitEditing={handleSubmitComment}
+          returnKeyType="send"
+          maxLength={500}
+        />
+        <Pressable
+          style={[styles.sendBtn, (!commentText.trim() || submitting) && styles.sendBtnDisabled]}
+          onPress={(e) => {
+            if (e && e.stopPropagation) {
+              e.stopPropagation();
+            }
+            handleSubmitComment();
+          }}
+          disabled={!commentText.trim() || submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Ionicons name="send" size={16} color={colors.white} />
+          )}
+        </Pressable>
+      </Pressable>
     </Pressable>
   );
 }
