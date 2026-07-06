@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, radius, spacing, typography } from "../../theme";
@@ -85,7 +85,6 @@ export default function ChooseTypeScreen({ navigation }: any) {
     () =>
       StyleSheet.create({
         container: {
-          flex: 1,
           backgroundColor: colors.surface,
           paddingHorizontal: spacing.lg,
           paddingBottom: spacing.xl,
@@ -155,7 +154,10 @@ export default function ChooseTypeScreen({ navigation }: any) {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+    <ScrollView 
+      style={{ flex: 1, backgroundColor: colors.surface }}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.lg, flexGrow: 1, paddingBottom: spacing.xl + insets.bottom }]}
+    >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
           <Ionicons name="close" size={20} color={colors.onSurface} />
@@ -236,6 +238,6 @@ export default function ChooseTypeScreen({ navigation }: any) {
           navigation.navigate("ProblemDefinition", { type: selected })
         }
       />
-    </View>
+    </ScrollView>
   );
 }

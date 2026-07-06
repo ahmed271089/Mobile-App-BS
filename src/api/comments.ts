@@ -7,7 +7,7 @@ export interface ApiComment {
   isAIComment: boolean;
   likesCount: number;
   createdAt: string;
-  author: { id: string; name: string; avatarUrl: string | null };
+  author: { id: string; name: string; avatarUrl: string | null; reputationPoints?: number; reputationLevel?: string; };
 }
 
 export function listComments(postId: string) {

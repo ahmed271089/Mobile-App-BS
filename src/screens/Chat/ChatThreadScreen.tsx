@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, radius, spacing, typography } from "../../theme";
-import { useSocket } from "../../api/socket";
+import { useSocket, setActiveConversationId } from "../../api/socket";
 import { getMessages, markConversationRead, ChatMessage } from "../../api/chat";
 
 export default function ChatThreadScreen({ navigation, route }: any) {
@@ -139,10 +139,10 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
   useEffect(() => {
     getMessages(conversationId)
-      .then((history) => setMessages(history.reverse())) // backend returns newest-first
+      .then((history) => setMessages(history)) // backend returns newest-first, perfect for inverted list
       .catch((err) => console.warn("Failed to load messages", err));
 
-    markConversationRead(conversationId).catch(() => {});
+    markConversationRead(conversationId).catch(() => { });
   }, [conversationId]);
 
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
     const onNewMessage = (message: ChatMessage) => {
       if (message.conversationId !== conversationId) return;
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => [message, ...prev]);
     };
 
     const onTyping = (payload: { conversationId: string }) => {
@@ -164,11 +164,13 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
     socket.on("new_message", onNewMessage);
     socket.on("typing", onTyping);
+    setActiveConversationId(conversationId);
 
     return () => {
       socket.emit("leave_conversation", { conversationId });
       socket.off("new_message", onNewMessage);
       socket.off("typing", onTyping);
+      setActiveConversationId(null);
     };
   }, [socket, conversationId]);
 
@@ -204,15 +206,16 @@ export default function ChatThreadScreen({ navigation, route }: any) {
 
       <FlatList
         data={messages}
+        inverted
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
         renderItem={({ item }) => {
           const isMine = item.senderId !== otherUser?.id;
           const time = item.createdAt
             ? new Date(item.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+              hour: "2-digit",
+              minute: "2-digit",
+            })
             : null;
           return (
             <View>

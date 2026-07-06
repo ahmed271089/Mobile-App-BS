@@ -5,7 +5,18 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import * as Notifications from "expo-notifications";
 import { io, Socket } from "socket.io-client";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 import { SOCKET_BASE_URL } from "./config";
 import { getAccessToken } from "../utils/tokenStorage";
 
@@ -16,11 +27,16 @@ interface SocketContextValue {
   disconnect: () => void;
 }
 
+export let activeConversationId: string | null = null;
+export const setActiveConversationId = (id: string | null) => {
+  activeConversationId = id;
+};
+
 const SocketContext = createContext<SocketContextValue>({
   socket: null,
   connected: false,
-  connect: async () => {},
-  disconnect: () => {},
+  connect: async () => { },
+  disconnect: () => { },
 });
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
@@ -41,6 +57,38 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on("connect_error", (err) => {
       console.warn("Socket connection error:", err.message);
       setConnected(false);
+    });
+
+    newSocket.on("message_notification", (data) => {
+      if (data.conversationId !== activeConversationId) {
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: `New message from ${data.from?.name || "someone"}`,
+            body: data.preview,
+          },
+          trigger: null,
+        });
+      }
+    });
+
+    newSocket.on("level_up", (data) => {
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Level Up! 🎉",
+          body: `Congratulations! You have reached the ${data.newLevel} level!`,
+        },
+        trigger: null,
+      });
+    });
+
+    newSocket.on("reputation_update", (data) => {
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Reputation Points! 🏆",
+          body: data.message,
+        },
+        trigger: null,
+      });
     });
 
     setSocket((prev) => {

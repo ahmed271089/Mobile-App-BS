@@ -21,10 +21,11 @@ import { clearTokens } from "../../utils/tokenStorage";
 import { useSocket } from "../../api/socket";
 import { getMe, ApiUser, updateProfile } from "../../api/users";
 import { uploadFile } from "../../api/uploads";
-import { getFeed } from "../../api/posts";
+import { getFeed, deleteAllPosts } from "../../api/posts";
 import { adaptApiPost } from "../../utils/adaptApiPost";
 import { PostCard } from "../../components/PostCard";
 import { MockPost } from "../../data/mockData";
+import { UPLOADS_BASE_URL } from "../../api/config";
 
 export default function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -248,6 +249,29 @@ export default function ProfileScreen({ navigation }: any) {
     }
   };
 
+  const handleDeleteAllPosts = () => {
+    Alert.alert(
+      "Delete All Posts",
+      "Are you sure you want to delete all your posts? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete All",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAllPosts();
+              setPosts([]);
+              Alert.alert("Success", "All posts have been deleted.");
+            } catch (err) {
+              Alert.alert("Error", "Could not delete posts.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
@@ -285,7 +309,7 @@ export default function ProfileScreen({ navigation }: any) {
         <Pressable onPress={handleChangeAvatar} style={styles.avatarWrap}>
           {user?.avatarUrl ? (
             <Image
-              source={{ uri: user.avatarUrl }}
+              source={{ uri: user.avatarUrl.replace(/http:\/\/localhost:\d+/, UPLOADS_BASE_URL) }}
               style={styles.avatarImage}
             />
           ) : (
@@ -302,11 +326,18 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
         </Pressable>
         <Text style={styles.name}>{user?.name ?? "User"}</Text>
-        <Badge
-          label={user?.isVerified ? `Expert · ${topCategory}` : topCategory}
-          variant="info"
-          icon={user?.isVerified ? "🛡️" : undefined}
-        />
+        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+          <Badge
+            label={user?.reputationLevel || 'Novice'}
+            variant="warning"
+            icon="⭐"
+          />
+          <Badge
+            label={user?.isVerified ? `Expert · ${topCategory}` : topCategory}
+            variant="info"
+            icon={user?.isVerified ? "🛡️" : undefined}
+          />
+        </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
@@ -320,17 +351,74 @@ export default function ProfileScreen({ navigation }: any) {
             <Text style={styles.statValue}>{user?.expertise?.length ?? 0}</Text>
             <Text style={styles.statLabel}>Categories</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {user?.isVerified ? "Yes" : "No"}
-            </Text>
-            <Text style={styles.statLabel}>Verified</Text>
-          </View>
         </View>
+
+        {(user?.rank !== undefined || user?.activityScore !== undefined) && (
+          <View style={[styles.statsRow, { marginTop: spacing.md }]}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>
+                #{user?.rank ?? '-'}
+              </Text>
+              <Text style={styles.statLabel}>Global Rank</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {(user?.activityScore ?? 0).toLocaleString()}
+              </Text>
+              <Text style={styles.statLabel}>Contributions</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {user?.isVerified ? "Yes" : "No"}
+              </Text>
+              <Text style={styles.statLabel}>Verified</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.nextLevel && user.nextLevelPoints && user.currentLevelPoints !== undefined ? (
+          <View style={{ width: '100%', marginTop: spacing.xl }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <Text style={{ ...typography.caption, color: colors.onSurfaceVariant }}>
+                {user.reputationPoints} / {user.nextLevelPoints} pts
+              </Text>
+              <Text style={{ ...typography.caption, color: colors.onSurfaceVariant, fontWeight: 'bold' }}>
+                Next: {user.nextLevel}
+              </Text>
+            </View>
+            <View style={{ height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: colors.outlineVariant }}>
+              <View
+                style={{
+                  height: '100%',
+                  backgroundColor: colors.primary,
+                  width: `${Math.min(100, Math.max(0, ((user.reputationPoints - user.currentLevelPoints) / (user.nextLevelPoints - user.currentLevelPoints)) * 100))}%`
+                }}
+              />
+            </View>
+          </View>
+        ) : null}
       </View>
 
-      <Text style={styles.sectionTitle}>Chat & Friends</Text>
+      <Text style={styles.sectionTitle}>Community</Text>
+      <Pressable
+        style={styles.listRow}
+        onPress={() => navigation.navigate("Leaderboard")}
+      >
+        <View style={styles.listIcon}>
+          <Ionicons name="trophy-outline" size={18} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.listTitle}>Leaderboard</Text>
+          <Text style={styles.listDesc}>
+            View the top contributors and experts
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+      </Pressable>
+
+      <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Chat & Friends</Text>
       <Pressable
         style={styles.listRow}
         onPress={() => navigation.navigate("Chat", { screen: "Friends" })}
@@ -422,9 +510,14 @@ export default function ProfileScreen({ navigation }: any) {
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
 
-      <Text style={[styles.sectionTitle, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>
-        My Posts
-      </Text>
+      <View style={[styles.headerRow, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>My Posts</Text>
+        {posts.length > 0 && (
+          <Pressable onPress={handleDeleteAllPosts}>
+            <Text style={{ ...typography.bodyBold, color: colors.error }}>Delete All</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 

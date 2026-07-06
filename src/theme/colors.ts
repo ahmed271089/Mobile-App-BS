@@ -113,7 +113,7 @@ export const lightColors: ColorScheme = {
   outlineVariant: "#c3c6d5",
 
   // Primary (Resolution Blue)
-  primary: "#003c90",
+  primary: "#FFF",
   onPrimary: "#ffffff",
   primaryContainer: "#0f52ba",
   onPrimaryContainer: "#bcceff",

@@ -18,15 +18,19 @@ export function PostCard({
   const [submitting, setSubmitting] = useState(false);
   const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
 
+  const [localLastComment, setLocalLastComment] = useState(post.lastComment);
+
   useEffect(() => {
     setLocalCommentsCount(post.commentsCount);
-  }, [post.commentsCount]);
+    setLocalLastComment(post.lastComment);
+  }, [post.commentsCount, post.lastComment]);
 
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
     setSubmitting(true);
     try {
       await createComment(post.id, commentText.trim());
+      setLocalLastComment({ authorName: "You", content: commentText.trim() });
       setCommentText("");
       setLocalCommentsCount((prev) => prev + 1);
     } catch (err) {
@@ -115,6 +119,22 @@ export function PostCard({
           gap: 4,
         },
         statText: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+        },
+        lastCommentRow: {
+          marginTop: spacing.sm,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs,
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+        },
+        lastCommentAuthor: {
+          ...typography.caption,
+          fontWeight: "bold",
+          color: colors.onSurface,
+        },
+        lastCommentText: {
           ...typography.caption,
           color: colors.onSurfaceVariant,
         },
@@ -210,6 +230,16 @@ export function PostCard({
             <Text style={styles.avatarText}>{post.author.avatar}</Text>
           </View>
           <Text style={styles.authorName}>{post.author.name}</Text>
+          {post.author.reputationLevel && (
+            <Text style={{ ...typography.caption, color: colors.primary, fontWeight: 'bold', marginLeft: 4 }}>
+              · {post.author.reputationLevel}
+            </Text>
+          )}
+          {post.author.reputationPoints !== undefined ? (
+            <Text style={{ ...typography.caption, color: colors.primary, marginLeft: 4 }}>
+              ({post.author.reputationPoints.toLocaleString()})
+            </Text>
+          ) : null}
           <Text style={styles.dot}>·</Text>
           <Text style={styles.time}>{post.createdAt}</Text>
         </View>
@@ -234,7 +264,16 @@ export function PostCard({
         </View>
       </View>
 
-      <Pressable 
+      {localLastComment ? (
+        <View style={styles.lastCommentRow}>
+          <Text style={styles.lastCommentAuthor}>{localLastComment.authorName}</Text>
+          <Text style={styles.lastCommentText} numberOfLines={2}>
+            {localLastComment.content}
+          </Text>
+        </View>
+      ) : null}
+
+      <Pressable
         style={styles.commentInputRow}
         onPress={(e) => {
           if (e && e.stopPropagation) {

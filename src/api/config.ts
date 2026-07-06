@@ -9,9 +9,9 @@ import { Platform } from 'react-native';
  *   not your computer, so you MUST use your computer's LAN IP instead - and the
  *   phone + computer must be on the same Wi-Fi network.
  */
-const RUNNING_ON: 'simulator' | 'device' = 'simulator';
+const RUNNING_ON: 'simulator' | 'device' = 'device';
 
-const LAN_IP = '192.168.1.42'; // <-- replace with your machine's actual LAN IP when RUNNING_ON = 'device'
+const LAN_IP = '192.168.0.31'; // <-- replace with your machine's actual LAN IP when RUNNING_ON = 'device'
 const PORT = 3000;
 
 function resolveHost(): string {

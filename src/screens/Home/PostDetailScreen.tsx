@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,6 +27,7 @@ import { createComment, ApiComment } from "../../api/comments";
 import { createReport } from "../../api/reports";
 import { getMe, ApiUser } from "../../api/users";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
+import { UPLOADS_BASE_URL } from "../../api/config";
 
 export default function PostDetailScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -355,6 +357,40 @@ export default function PostDetailScreen({ navigation, route }: any) {
         <Text style={styles.title}>{post.title}</Text>
         <Text style={styles.description}>{post.description}</Text>
 
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.outlineVariant }}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
+            <Text style={{ ...typography.bodyBold, color: colors.primary }}>
+              {post.author?.name?.slice(0, 2).toUpperCase() || '??'}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Text style={{ ...typography.bodyBold, color: colors.onSurface }}>{post.author?.name || 'Unknown'}</Text>
+              {post.author?.reputationLevel && (
+                <Badge label={post.author.reputationLevel} variant="warning" icon="⭐" />
+              )}
+            </View>
+            {post.author?.reputationPoints !== undefined && (
+              <Text style={{ ...typography.caption, color: colors.primary, marginTop: 2 }}>
+                🏆 {post.author.reputationPoints.toLocaleString()} points
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {post.attachments?.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+            {post.attachments.map((media: any) => (
+              <Image
+                key={media.id}
+                source={{ uri: media.url.replace(/http:\/\/localhost:\d+/, UPLOADS_BASE_URL) }}
+                style={{ width: 250, height: 250, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceContainer }}
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+        )}
+
         {post.aiAnalysis && (
           <View style={styles.aiBox}>
             <Badge label="AI Diagnosis" variant="info" icon="✨" />
@@ -375,6 +411,14 @@ export default function PostDetailScreen({ navigation, route }: any) {
             <View style={{ flex: 1 }}>
               <View style={styles.commentMeta}>
                 <Text style={styles.commentAuthor}>{c.author.name}</Text>
+                {c.author.reputationLevel && (
+                  <Badge label={c.author.reputationLevel} variant="warning" />
+                )}
+                {c.author.reputationPoints !== undefined && (
+                  <Text style={{ ...typography.caption, color: colors.primary, marginLeft: 2 }}>
+                    ({c.author.reputationPoints.toLocaleString()})
+                  </Text>
+                )}
                 {c.isAIComment && <Badge label="AI" variant="info" />}
                 {post.solvedCommentId === c.id && (
                   <Badge label="Solution" variant="success" icon="✓" />

@@ -11,12 +11,17 @@ export interface ApiPost {
   commentsCount: number;
   isTrending: boolean;
   createdAt: string;
-  author: { id: string; name: string; avatarUrl: string | null; reputationPoints: number };
+  author: { id: string; name: string; avatarUrl: string | null; reputationPoints: number; reputationLevel?: string };
   category: { id: string; name: string; slug: string; icon: string | null };
   attachments: { id: string; type: 'PHOTO' | 'VIDEO'; url: string }[];
   aiAnalysis: { diagnosis: string; suggestedSolutions: string[]; confidenceScore: number } | null;
   solvedCommentId?: string | null;
   _count?: { comments: number; likes: number };
+  comments?: {
+    id: string;
+    content: string;
+    author: { name: string; reputationPoints?: number; reputationLevel?: string; };
+  }[];
 }
 
 export interface CreatePostInput {
@@ -74,6 +79,10 @@ export function markPostSolved(id: string, solvedCommentId: string) {
 
 export function deletePost(id: string) {
   return api.delete(`/posts/${id}`);
+}
+
+export function deleteAllPosts() {
+  return api.delete('/posts/all');
 }
 
 export function getCategories() {
