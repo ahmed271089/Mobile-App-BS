@@ -21,11 +21,11 @@ import { MockPost } from "../../data/mockData";
 export default function HomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  
+
   const [feedData, setFeedData] = useState<MockPost[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -156,7 +156,7 @@ export default function HomeScreen({ navigation }: any) {
   const loadMore = async () => {
     if (loadingMore || !hasMore || feedData.length === 0) return;
     setLoadingMore(true);
-    
+
     const cursor = feedData[feedData.length - 1].id;
     try {
       const posts = await getFeed({
@@ -172,6 +172,25 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
 
+  const checkForNewPosts = useCallback(async () => {
+    try {
+      const posts = await getFeed({ categoryId: selectedCategory ?? undefined });
+      const newPosts = posts.map(adaptApiPost);
+
+      setFeedData((prev) => {
+        const merged = [...newPosts];
+        for (const p of prev) {
+          if (!merged.find((m) => m.id === p.id)) {
+            merged.push(p);
+          }
+        }
+        return merged;
+      });
+    } catch (err) {
+      // silent fail for background polling
+    }
+  }, [selectedCategory]);
+
   useEffect(() => {
     setLoading(true);
     loadInitial().finally(() => setLoading(false));
@@ -180,7 +199,11 @@ export default function HomeScreen({ navigation }: any) {
   useFocusEffect(
     useCallback(() => {
       loadUnreadCount();
-    }, [loadUnreadCount]),
+      const interval = setInterval(() => {
+        checkForNewPosts();
+      }, 15000); // Poll every 15 seconds
+      return () => clearInterval(interval);
+    }, [loadUnreadCount, checkForNewPosts]),
   );
 
   const onRefresh = async () => {

@@ -1,6 +1,7 @@
 import { ApiPost } from '../api/posts';
 import { MockPost } from '../data/mockData';
 import { formatRelativeTime } from './formatRelativeTime';
+import { UPLOADS_BASE_URL } from '../api/config';
 
 const CATEGORY_COLORS: Record<string, string> = {
   technology: '#3B82F6',
@@ -31,11 +32,21 @@ export function adaptApiPost(post: ApiPost): MockPost {
         .slice(0, 2)
         .toUpperCase(),
       verified: post.author.reputationPoints > 5000,
+      reputationPoints: post.author.reputationPoints,
+      reputationLevel: post.author.reputationLevel,
     },
-    thumbnail: post.attachments[0]?.url ?? post.id,
+    thumbnail: post.attachments[0]?.url ? post.attachments[0].url.replace(/http:\/\/localhost:\d+/, UPLOADS_BASE_URL) : post.id,
     commentsCount: post._count?.comments ?? post.commentsCount,
     likesCount: post._count?.likes ?? post.likesCount,
     isTrending: post.isTrending,
     createdAt: formatRelativeTime(post.createdAt),
+    ...(post.comments && post.comments.length > 0
+      ? {
+        lastComment: {
+          authorName: post.comments[0].author.name,
+          content: post.comments[0].content,
+        },
+      }
+      : {}),
   };
 }

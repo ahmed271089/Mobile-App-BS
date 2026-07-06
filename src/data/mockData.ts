@@ -8,12 +8,19 @@ export interface MockPost {
   title: string;
   description: string;
   category: { name: string; color: string };
-  author: { name: string; avatar: string; verified?: boolean };
+  author: {
+    name: string;
+    avatar: string;
+    verified?: boolean;
+    reputationPoints?: number;
+    reputationLevel?: string;
+  };
   thumbnail: string;
   commentsCount: number;
   likesCount: number;
   isTrending?: boolean;
   createdAt: string;
+  lastComment?: { authorName: string; content: string };
 }
 
 export const categories = [

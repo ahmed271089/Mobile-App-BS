@@ -8,6 +8,12 @@ export interface ApiUser {
   avatarUrl?: string | null;
   bio?: string | null;
   reputationPoints: number;
+  reputationLevel?: string;
+  nextLevel?: string | null;
+  nextLevelPoints?: number;
+  currentLevelPoints?: number;
+  rank?: number;
+  activityScore?: number;
   isVerified: boolean;
   status?: string;
   role?: string;
@@ -31,4 +37,9 @@ export function searchUsers(q: string) {
   return api.get<Pick<ApiUser, 'id' | 'name' | 'avatarUrl' | 'reputationPoints' | 'isVerified'>[]>(
     `/users/search?q=${encodeURIComponent(q)}`,
   );
+}
+
+export function getLeaderboard(categoryId?: string) {
+  const url = categoryId ? `/users/leaderboard?categoryId=${categoryId}` : '/users/leaderboard';
+  return api.get<(ApiUser & { activityScore?: number })[]>(url);
 }
