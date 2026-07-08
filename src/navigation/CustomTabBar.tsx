@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { StyleSheet as RNStyleSheet } from "react-native";
 import { View, Text, Pressable, Platform, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +12,7 @@ const TAB_CONFIG: Record<
   { icon: keyof typeof Ionicons.glyphMap; label: string }
 > = {
   Home: { icon: "home", label: "Home" },
-  Library: { icon: "library", label: "Library" },
+  Library: { icon: "bookmark", label: "Post Saved" },
   Chat: { icon: "chatbubbles", label: "Chat" },
   Profile: { icon: "person", label: "Profile" },
 };
@@ -27,7 +28,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         alignItems: "center" as const,
         justifyContent: "space-around" as const,
         backgroundColor: colors.surfaceContainerHigh,
-        borderTopWidth: 1,
+        borderTopWidth: RNStyleSheet.hairlineWidth,
         borderTopColor: colors.outlineVariant,
         paddingTop: 8,
       },
@@ -110,7 +111,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                       { transform: [{ scale: pressed ? 0.92 : 1 }] },
                     ]}
                   >
-                    <Ionicons name="add" size={28} color={colors.white} />
+                    <Ionicons name="add" size={28} color={colors.onPrimary} />
                   </LinearGradient>
                   <Text style={styles.centerLabel}>Create</Text>
                 </>

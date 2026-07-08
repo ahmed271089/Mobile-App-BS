@@ -65,7 +65,7 @@ export default function FriendsScreen({ navigation }: any) {
           flexDirection: "row",
           alignItems: "center",
           paddingVertical: spacing.md,
-          borderBottomWidth: 1,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.outlineVariant,
         },
         avatar: {

@@ -56,7 +56,7 @@ export default function ConversationsListScreen({ navigation }: any) {
           alignItems: "center",
           gap: spacing.md,
           paddingVertical: spacing.md,
-          borderBottomWidth: 1,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.outlineVariant,
         },
         avatar: {

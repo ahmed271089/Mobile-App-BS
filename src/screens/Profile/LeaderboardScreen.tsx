@@ -50,7 +50,7 @@ export default function LeaderboardScreen({ navigation }: any) {
           alignItems: "center",
           paddingHorizontal: spacing.lg,
           paddingBottom: spacing.lg,
-          borderBottomWidth: 1,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.outlineVariant,
         },
         backBtn: {
@@ -74,7 +74,7 @@ export default function LeaderboardScreen({ navigation }: any) {
           borderRadius: radius.lg,
           padding: spacing.md,
           marginBottom: spacing.md,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
         },
         rankContainer: {
@@ -156,7 +156,7 @@ export default function LeaderboardScreen({ navigation }: any) {
           return (
             <View style={styles.userCard}>
               <View style={[styles.rankContainer, index < 3 && { backgroundColor: colors.primary }]}>
-                <Text style={[styles.rankText, index < 3 && { color: colors.white }]}>
+                <Text style={[styles.rankText, index < 3 && { color: colors.onPrimary }]}>
                   #{index + 1}
                 </Text>
               </View>

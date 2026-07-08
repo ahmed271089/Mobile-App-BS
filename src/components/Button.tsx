@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useColors, gradients, radius, typography, spacing } from "../theme";
@@ -27,6 +28,22 @@ export function Button({
   style,
 }: ButtonProps) {
   const colors = useColors();
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const styles = React.useMemo(
     () =>
@@ -39,12 +56,12 @@ export function Button({
         },
         primaryLabel: {
           ...typography.bodyBold,
-          color: colors.white,
+          color: colors.onPrimary,
           fontSize: 15,
         },
         secondary: {
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
         },
         secondaryLabel: {
@@ -65,44 +82,47 @@ export function Button({
 
   if (variant === "primary") {
     return (
-      <Pressable
-        onPress={onPress}
-        disabled={disabled || loading}
-        style={({ pressed }) => [
-          { opacity: disabled ? 0.5 : 1 },
-          { transform: [{ scale: pressed && !disabled ? 0.97 : 1 }] },
-          style,
-        ]}
-      >
-        <LinearGradient colors={gradients.primary} style={styles.base}>
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.primaryLabel}>{label}</Text>
-          )}
-        </LinearGradient>
-      </Pressable>
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={disabled || loading}
+          style={{ opacity: disabled ? 0.5 : 1 }}
+        >
+          <LinearGradient colors={gradients.primary} style={styles.base}>
+            {loading ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <Text style={styles.primaryLabel}>{label}</Text>
+            )}
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
     );
   }
 
   if (variant === "secondary") {
     return (
-      <Pressable
-        onPress={onPress}
-        disabled={disabled || loading}
-        style={({ pressed }) => [
-          styles.base,
-          styles.secondary,
-          { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
-          style,
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.onSurface} />
-        ) : (
-          <Text style={styles.secondaryLabel}>{label}</Text>
-        )}
-      </Pressable>
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={disabled || loading}
+          style={[
+            styles.base,
+            styles.secondary,
+            { opacity: disabled ? 0.5 : 1 },
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.onSurface} />
+          ) : (
+            <Text style={styles.secondaryLabel}>{label}</Text>
+          )}
+        </Pressable>
+      </Animated.View>
     );
   }
 

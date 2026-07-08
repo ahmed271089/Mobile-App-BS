@@ -10,6 +10,7 @@ export interface ApiPost {
   likesCount: number;
   commentsCount: number;
   isTrending: boolean;
+  isHidden?: boolean;
   createdAt: string;
   author: { id: string; name: string; avatarUrl: string | null; reputationPoints: number; reputationLevel?: string };
   category: { id: string; name: string; slug: string; icon: string | null };
@@ -55,8 +56,17 @@ export function getFeed(params: {
   return api.get<ApiPost[]>(`/posts${qs ? `?${qs}` : ''}`);
 }
 
+export function getMyPosts(cursor?: string) {
+  const qs = cursor ? `?cursor=${cursor}` : '';
+  return api.get<ApiPost[]>(`/posts/my-posts${qs}`);
+}
+
 export function getPost(id: string) {
   return api.get<ApiPost & { comments: any[] }>(`/posts/${id}`);
+}
+
+export function getFavorites() {
+  return api.get<ApiPost[]>('/posts/favorites');
 }
 
 export function searchPosts(q: string, categoryId?: string) {

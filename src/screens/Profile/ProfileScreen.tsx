@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,7 +22,7 @@ import { clearTokens } from "../../utils/tokenStorage";
 import { useSocket } from "../../api/socket";
 import { getMe, ApiUser, updateProfile } from "../../api/users";
 import { uploadFile } from "../../api/uploads";
-import { getFeed, deleteAllPosts } from "../../api/posts";
+import { getFeed, getMyPosts, deleteAllPosts } from "../../api/posts";
 import { adaptApiPost } from "../../utils/adaptApiPost";
 import { PostCard } from "../../components/PostCard";
 import { MockPost } from "../../data/mockData";
@@ -68,11 +69,20 @@ export default function ProfileScreen({ navigation }: any) {
         profileCard: {
           alignItems: "center",
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
           borderRadius: radius.lg,
           padding: spacing.xl,
           marginBottom: spacing.xl,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+            },
+            android: { elevation: 2 },
+          }),
         },
         avatarWrap: { position: "relative", marginBottom: spacing.md },
         avatar: {
@@ -129,7 +139,7 @@ export default function ProfileScreen({ navigation }: any) {
           alignItems: "center",
           gap: spacing.md,
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
           borderRadius: radius.lg,
           padding: spacing.md,
@@ -173,7 +183,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   const loadInitialPosts = async (userId: string) => {
     try {
-      const feed = await getFeed({ authorId: userId });
+      const feed = await getMyPosts();
       setPosts(feed.map(adaptApiPost));
       setHasMorePosts(feed.length >= 20);
     } catch (err) {
@@ -186,7 +196,7 @@ export default function ProfileScreen({ navigation }: any) {
     setLoadingPosts(true);
     const cursor = posts[posts.length - 1].id;
     try {
-      const feed = await getFeed({ authorId: user.id, cursor });
+      const feed = await getMyPosts(cursor);
       setPosts((prev) => [...prev, ...feed.map(adaptApiPost)]);
       setHasMorePosts(feed.length >= 20);
     } catch (err) {
@@ -388,7 +398,7 @@ export default function ProfileScreen({ navigation }: any) {
                 Next: {user.nextLevel}
               </Text>
             </View>
-            <View style={{ height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: colors.outlineVariant }}>
+            <View style={{ height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.outlineVariant }}>
               <View
                 style={{
                   height: '100%',
@@ -533,7 +543,13 @@ export default function ProfileScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <PostCard
             post={item}
-            onPress={() => navigation.navigate("PostDetail", { id: item.id })}
+            onPress={() => {
+              if (item.isHidden) {
+                Alert.alert("Hidden", "This post is hidden by moderation and cannot be viewed.");
+              } else {
+                navigation.navigate("PostDetail", { id: item.id });
+              }
+            }}
           />
         )}
         ListHeaderComponent={renderHeader}

@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColors, radius, spacing, typography } from "../../theme";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
+import { ReportModal } from "../../components/ReportModal";
 import {
   getPost,
   markPostSolved,
@@ -40,6 +41,8 @@ export default function PostDetailScreen({ navigation, route }: any) {
   const [liked, setLiked] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: 'POST'|'COMMENT'|'USER', id: string } | null>(null);
 
   const styles = React.useMemo(
     () =>
@@ -81,7 +84,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
         aiBox: {
           backgroundColor: colors.primaryContainer + "80",
           borderRadius: radius.lg,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.primaryContainer,
           padding: spacing.lg,
           marginBottom: spacing.xl,
@@ -137,7 +140,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
         commentInput: {
           flex: 1,
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
           borderRadius: radius.lg,
           paddingHorizontal: spacing.md,
@@ -213,30 +216,20 @@ export default function PostDetailScreen({ navigation, route }: any) {
     }
   };
 
-  const handleReport = () => {
-    const submitReport = async (reason: string) => {
-      if (!reason.trim()) return;
-      try {
-        await createReport("POST", id, reason.trim());
-        Alert.alert("Reported", "Thank you. Our team will review it.");
-      } catch {
-        Alert.alert("Error", "Could not submit report.");
-      }
-    };
+  const handleReport = (type: 'POST' | 'COMMENT' | 'USER', targetId: string) => {
+    setReportTarget({ type, id: targetId });
+    setReportModalVisible(true);
+  };
 
-    const reasons = [
-      "Spam or misleading",
-      "Harassment or hate",
-      "Inappropriate content",
-      "Other",
-    ];
-    Alert.alert("Report post", "Why are you reporting this?", [
-      ...reasons.map((reason) => ({
-        text: reason,
-        onPress: () => submitReport(reason),
-      })),
-      { text: "Cancel", style: "cancel" },
-    ]);
+  const submitReport = async (reason: string, details: string) => {
+    if (!reportTarget) return;
+    try {
+      await createReport(reportTarget.type, reportTarget.id, reason, details);
+      // The modal handles its own success state now.
+    } catch {
+      Alert.alert("Error", "Could not submit report.");
+      throw new Error("Failed");
+    }
   };
 
   const handleToggleLike = async () => {
@@ -334,7 +327,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
               <Ionicons name="trash-outline" size={18} color={colors.error} />
             </Pressable>
           )}
-          <Pressable style={styles.backBtn} onPress={handleReport}>
+          <Pressable style={styles.backBtn} onPress={() => handleReport('POST', id)}>
             <Ionicons
               name="flag-outline"
               size={18}
@@ -368,6 +361,11 @@ export default function PostDetailScreen({ navigation, route }: any) {
               <Text style={{ ...typography.bodyBold, color: colors.onSurface }}>{post.author?.name || 'Unknown'}</Text>
               {post.author?.reputationLevel && (
                 <Badge label={post.author.reputationLevel} variant="warning" icon="⭐" />
+              )}
+              {currentUser?.id !== post.author?.id && (
+                <Pressable onPress={() => handleReport('USER', post.author?.id)} style={{ marginLeft: 'auto' }}>
+                  <Ionicons name="flag-outline" size={16} color={colors.error} />
+                </Pressable>
               )}
             </View>
             {post.author?.reputationPoints !== undefined && (
@@ -426,6 +424,16 @@ export default function PostDetailScreen({ navigation, route }: any) {
                 <Text style={styles.commentTime}>
                   {formatRelativeTime(c.createdAt)}
                 </Text>
+                {currentUser?.id !== c.author.id && (
+                  <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: spacing.sm }}>
+                    <Pressable onPress={() => handleReport('USER', c.author.id)}>
+                      <Ionicons name="person-remove-outline" size={14} color={colors.error} />
+                    </Pressable>
+                    <Pressable onPress={() => handleReport('COMMENT', c.id)}>
+                      <Ionicons name="flag-outline" size={14} color={colors.onSurfaceVariant} />
+                    </Pressable>
+                  </View>
+                )}
               </View>
               <Text style={styles.commentText}>{c.content}</Text>
               {post.status !== "SOLVED" &&
@@ -458,7 +466,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
             style={styles.sendCommentBtn}
             disabled={submitting}
           >
-            <Ionicons name="send" size={16} color={colors.white} />
+            <Ionicons name="send" size={16} color={colors.onPrimary} />
           </Pressable>
         </View>
 
@@ -471,6 +479,12 @@ export default function PostDetailScreen({ navigation, route }: any) {
           />
         )}
       </View>
+      <ReportModal
+        visible={reportModalVisible}
+        targetType={reportTarget?.type}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={submitReport}
+      />
     </ScrollView>
   );
 }

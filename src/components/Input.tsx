@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TextInputProps,
+  Platform,
 } from "react-native";
 import { useColors, radius, spacing, typography } from "../theme";
 
@@ -42,6 +43,15 @@ export function Input({ label, icon, style, multiline, ...rest }: InputProps) {
         wrapperFocused: {
           borderColor: colors.primary,
           backgroundColor: colors.surfaceContainerLow,
+          ...Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.12,
+              shadowRadius: 6,
+            },
+            android: { elevation: 2 },
+          }),
         },
         input: {
           flex: 1,

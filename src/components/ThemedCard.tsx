@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { View, Text, StyleSheet, ViewStyle } from "react-native";
+import { View, Text, StyleSheet, ViewStyle, Platform } from "react-native";
 import { useColors, typography, spacing, radius } from "../theme";
 
 interface ThemedCardProps {
@@ -21,16 +21,34 @@ export function ThemedCard({
 }: ThemedCardProps) {
   const colors = useColors();
 
+  const shadowStyle = Platform.select({
+    ios: elevated
+      ? {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+        }
+      : {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.04,
+          shadowRadius: 3,
+        },
+    android: { elevation: elevated ? 3 : 1 },
+  });
+
   return (
     <View
       style={[
-        styles.card,
+        baseStyles.card,
         {
           backgroundColor: elevated
             ? colors.surfaceContainerHigh
             : colors.surfaceContainer,
           borderColor: colors.outlineVariant,
         },
+        shadowStyle,
         style,
       ]}
     >
@@ -49,11 +67,11 @@ export function ThemedCard({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   card: {
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.xs,
   },
 });

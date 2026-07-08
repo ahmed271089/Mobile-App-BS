@@ -128,7 +128,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         alignItems: "center" as const,
         gap: 6,
         backgroundColor: colors.surfaceContainer,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
         borderRadius: 999,
         paddingHorizontal: spacing.md,
@@ -151,7 +151,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         width: 84,
         height: 84,
         borderRadius: radius.md,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
       },
       thumbRemove: {
@@ -193,7 +193,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
       aiCard: {
         backgroundColor: `${colors.primaryContainer}33`,
         borderRadius: radius.lg,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.primaryContainer,
         padding: spacing.lg,
         marginBottom: spacing.md,

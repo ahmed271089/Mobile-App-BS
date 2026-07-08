@@ -16,9 +16,10 @@ export interface MockPost {
     reputationLevel?: string;
   };
   thumbnail: string;
-  commentsCount: number;
   likesCount: number;
-  isTrending?: boolean;
+  commentsCount: number;
+  isTrending: boolean;
+  isHidden?: boolean;
   createdAt: string;
   lastComment?: { authorName: string; content: string };
 }
