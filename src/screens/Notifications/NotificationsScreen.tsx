@@ -94,7 +94,7 @@ export default function NotificationsScreen({ navigation }: any) {
           flexDirection: "row",
           gap: spacing.md,
           paddingVertical: spacing.md,
-          borderBottomWidth: 1,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.outlineVariant,
         },
         rowUnread: {

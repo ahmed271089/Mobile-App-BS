@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useColors, spacing, typography, radius } from "../theme";
 
@@ -51,8 +52,17 @@ export function ConfirmModal({
           padding: spacing.xl,
           width: "100%",
           maxWidth: 400,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.18,
+              shadowRadius: 24,
+            },
+            android: { elevation: 12 },
+          }),
         },
         title: {
           ...typography.h3,
@@ -82,7 +92,7 @@ export function ConfirmModal({
         },
         cancelButton: {
           backgroundColor: colors.surfaceContainer,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
         },
         confirmButton: {
@@ -94,7 +104,7 @@ export function ConfirmModal({
         },
         confirmText: {
           ...typography.bodyBold,
-          color: colors.white,
+          color: colors.onPrimary,
         },
       }),
     [colors, resolvedConfirmColor],
@@ -119,7 +129,11 @@ export function ConfirmModal({
           <View style={styles.buttons}>
             <Pressable
               onPress={onCancel}
-              style={[styles.button, styles.cancelButton]}
+              style={({ pressed }) => [
+                styles.button,
+                styles.cancelButton,
+                pressed && { opacity: 0.7 },
+              ]}
               disabled={loading}
             >
               <Text style={styles.cancelText}>{cancelText}</Text>
@@ -127,11 +141,15 @@ export function ConfirmModal({
 
             <Pressable
               onPress={onConfirm}
-              style={[styles.button, styles.confirmButton]}
+              style={({ pressed }) => [
+                styles.button,
+                styles.confirmButton,
+                pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
+              ]}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color={colors.onPrimary} />
               ) : (
                 <Text style={styles.confirmText}>{confirmText}</Text>
               )}

@@ -11,7 +11,7 @@ export const spacing = {
   xs: 4,      // 0.5 * base
   sm: 12,     // 1.5 * base
   md: 24,     // 3 * base
-  lg: 40,     // 5 * base
+  lg: 10,     // 5 * base
   xl: 64,     // 8 * base
   xxl: 96,    // 12 * base
 

@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors, radius, spacing, typography } from "../../theme";
 import { PostCard } from "../../components/PostCard";
-import { getFeed } from "../../api/posts";
+import { getFavorites } from "../../api/posts";
 import { adaptApiPost } from "../../utils/adaptApiPost";
 import { MockPost } from "../../data/mockData";
 
@@ -30,7 +30,7 @@ function StatCard({
       statCard: {
         flexBasis: "47%" as const,
         backgroundColor: colors.surfaceContainer,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
         borderRadius: radius.lg,
         padding: spacing.lg,
@@ -95,7 +95,7 @@ export default function LibraryScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      const posts = await getFeed({ status: "SOLVED" });
+      const posts = await getFavorites();
       setSolvedPosts(posts.map(adaptApiPost));
     } catch (err) {
       console.warn("Failed to load library", err);
@@ -139,9 +139,9 @@ export default function LibraryScreen({ navigation }: any) {
         />
       }
     >
-      <Text style={styles.title}>Solved Library</Text>
+      <Text style={styles.title}>Post Saved</Text>
       <Text style={styles.subtitle}>
-        Every solved problem, searchable, forever.
+        Every saved post, searchable, forever.
       </Text>
 
       <View style={styles.statsGrid}>
@@ -152,7 +152,7 @@ export default function LibraryScreen({ navigation }: any) {
           colors={colors}
         />
         <StatCard
-          label="In Library"
+          label="Saved"
           value={String(solvedPosts.filter((p) => p.type === "PROBLEM").length)}
           colors={colors}
         />

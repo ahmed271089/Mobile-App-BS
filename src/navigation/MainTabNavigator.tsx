@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CustomTabBar } from './CustomTabBar';
 
 import HomeStackNavigator from './HomeStackNavigator';
-import LibraryScreen from '../screens/Library/LibraryScreen';
+import LibraryScreen from '../screens/Library/PostSaved';
 import ChatStackNavigator from './ChatStackNavigator';
 import ProfileStackNavigator from './ProfileStackNavigator';
 

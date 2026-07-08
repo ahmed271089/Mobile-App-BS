@@ -39,6 +39,7 @@ export function adaptApiPost(post: ApiPost): MockPost {
     commentsCount: post._count?.comments ?? post.commentsCount,
     likesCount: post._count?.likes ?? post.likesCount,
     isTrending: post.isTrending,
+    isHidden: post.isHidden,
     createdAt: formatRelativeTime(post.createdAt),
     ...(post.comments && post.comments.length > 0
       ? {

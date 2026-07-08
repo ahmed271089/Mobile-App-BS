@@ -73,6 +73,8 @@ export default function HomeScreen({ navigation }: any) {
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           marginBottom: spacing.lg,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.outlineVariant,
         },
         searchPlaceholder: {
           ...typography.body,
@@ -100,6 +102,9 @@ export default function HomeScreen({ navigation }: any) {
           ...typography.caption,
           color: colors.onSurfaceVariant,
           fontWeight: "500",
+        },
+        categoryLabelActive: {
+          color: colors.onPrimaryContainer,
         },
         sectionHeader: {
           flexDirection: "row",
@@ -271,7 +276,7 @@ export default function HomeScreen({ navigation }: any) {
               onPress={() => setSelectedCategory(c.id === "all" ? null : c.id)}
             >
               {c.icon && <Text style={{ fontSize: 14 }}>{c.icon}</Text>}
-              <Text style={styles.categoryLabel}>{c.name}</Text>
+              <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>{c.name}</Text>
             </Pressable>
           );
         }}

@@ -126,7 +126,7 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
       headerTitle: { ...typography.h3, color: colors.onSurface },
       previewCard: {
         backgroundColor: colors.surfaceContainer,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
         borderRadius: radius.lg,
         padding: spacing.lg,
@@ -157,7 +157,7 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
         width: 72,
         height: 72,
         borderRadius: radius.md,
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
       },
       audienceTitle: { ...typography.bodyBold, color: colors.onSurface },

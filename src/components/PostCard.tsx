@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, radius, spacing, typography } from "../theme";
 import { Badge } from "./Badge";
 import { MockPost } from "../data/mockData";
 import { createComment } from "../api/comments";
+import { toggleFavoritePost } from "../api/posts";
 
 export function PostCard({
   post,
@@ -19,6 +20,7 @@ export function PostCard({
   const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
 
   const [localLastComment, setLocalLastComment] = useState(post.lastComment);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     setLocalCommentsCount(post.commentsCount);
@@ -46,10 +48,19 @@ export function PostCard({
         card: {
           backgroundColor: colors.surfaceContainer,
           borderRadius: radius.lg,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
           padding: spacing.md,
           marginBottom: spacing.lg,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+            },
+            android: { elevation: 2 },
+          }),
         },
         thumbnail: {
           height: 140,
@@ -95,7 +106,7 @@ export function PostCard({
         avatarText: {
           fontSize: 10,
           fontWeight: "700",
-          color: colors.primary,
+          color: colors.onPrimaryContainer,
         },
         authorName: {
           ...typography.caption,
@@ -126,7 +137,7 @@ export function PostCard({
           marginTop: spacing.sm,
           paddingHorizontal: spacing.sm,
           paddingVertical: spacing.xs,
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceContainerLow,
           borderRadius: radius.md,
         },
         lastCommentAuthor: {
@@ -142,19 +153,19 @@ export function PostCard({
           flexDirection: "row",
           alignItems: "center",
           marginTop: spacing.xs,
-          borderTopWidth: 1,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.outlineVariant,
           paddingTop: spacing.sm,
         },
         commentInput: {
           flex: 1,
           height: 36,
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceContainerLow,
           borderRadius: 18,
           paddingHorizontal: spacing.md,
           ...typography.body,
           color: colors.onSurface,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
         },
         sendBtn: {
@@ -162,12 +173,12 @@ export function PostCard({
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: colors.primary,
+          backgroundColor: colors.primaryContainer,
           alignItems: "center",
           justifyContent: "center",
         },
         sendBtnDisabled: {
-          backgroundColor: colors.outlineVariant,
+          backgroundColor: colors.surfaceContainerHigh,
         },
       }),
     [colors],
@@ -183,13 +194,13 @@ export function PostCard({
         style={[
           styles.thumbnail,
           {
-            backgroundColor: `hsl(${hue}, 30%, 18%)`,
+            backgroundColor: colors.surfaceContainerHigh,
             alignItems: "center",
             justifyContent: "center",
           },
         ]}
       >
-        <Ionicons name="image-outline" size={32} color={`hsl(${hue}, 40%, 45%)`} />
+        <Ionicons name="image-outline" size={32} color={colors.onSurfaceVariant} />
       </View>
     );
   };
@@ -205,13 +216,21 @@ export function PostCard({
       <Thumbnail seed={post.thumbnail} />
 
       <View style={styles.topRow}>
-        <Badge label={post.category.name} variant="info" />
-        {post.status === "SOLVED" ? (
-          <Badge label="Solved" variant="success" icon="✓" />
-        ) : null}
-        {post.isTrending ? (
-          <Badge label="Trending" variant="warning" icon="🔥" />
-        ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+          <Badge
+            label={post.type}
+            variant={post.type === "PROBLEM" ? "danger" : "success"}
+          />
+          {post.status === "SOLVED" && (
+            <Badge label="Solved" variant="success" icon="✓" />
+          )}
+          {post.isTrending && (
+            <Badge label="Trending" variant="warning" icon="🔥" />
+          )}
+          {post.isHidden && (
+            <Badge label="Hidden" variant="danger" icon="🚫" />
+          )}
+        </View>
         {post.author.verified ? (
           <Badge label="Verified" variant="success" icon="✓" />
         ) : null}
@@ -261,6 +280,28 @@ export function PostCard({
             />
             <Text style={styles.statText}>{post.likesCount}</Text>
           </View>
+          <Pressable 
+            style={styles.statItem} 
+            onPress={async (e) => {
+              if (e && e.stopPropagation) {
+                e.stopPropagation();
+              }
+              const newSavedState = !isSaved;
+              setIsSaved(newSavedState);
+              try {
+                await toggleFavoritePost(post.id);
+              } catch (err) {
+                setIsSaved(!newSavedState);
+                Alert.alert("Error", "Could not save post.");
+              }
+            }}
+          >
+            <Ionicons
+              name={isSaved ? "bookmark" : "bookmark-outline"}
+              size={14}
+              color={isSaved ? colors.primary : colors.onSurfaceVariant}
+            />
+          </Pressable>
         </View>
       </View>
 
@@ -302,9 +343,9 @@ export function PostCard({
           disabled={!commentText.trim() || submitting}
         >
           {submitting ? (
-            <ActivityIndicator size="small" color={colors.white} />
+            <ActivityIndicator size="small" color={colors.onPrimaryContainer} />
           ) : (
-            <Ionicons name="send" size={16} color={colors.white} />
+            <Ionicons name="send" size={16} color={commentText.trim() ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
           )}
         </Pressable>
       </Pressable>

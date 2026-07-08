@@ -18,11 +18,11 @@ export function Badge({
 
   const VARIANT_STYLES = useMemo(
     () => ({
-      primary: { bg: colors.primaryContainer, fg: colors.primary },
+      primary: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
       success: { bg: colors.secondaryContainer, fg: colors.success },
       warning: { bg: colors.tertiaryContainer, fg: colors.warning },
       danger: { bg: colors.errorContainer, fg: colors.error },
-      info: { bg: `${colors.primaryContainer}CC`, fg: colors.info },
+      info: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
       neutral: { bg: colors.surfaceContainerHigh, fg: colors.onSurfaceVariant },
     }),
     [colors],
