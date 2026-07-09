@@ -3,10 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors, radius, spacing, typography } from "../../theme";
 import { PostCard } from "../../components/PostCard";
@@ -54,7 +56,7 @@ function StatCard({
 export default function LibraryScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const [solvedPosts, setSolvedPosts] = useState<MockPost[]>([]);
+  const [savedPosts, setSavedPosts] = useState<MockPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -96,16 +98,18 @@ export default function LibraryScreen({ navigation }: any) {
   const loadData = useCallback(async () => {
     try {
       const posts = await getFavorites();
-      setSolvedPosts(posts.map(adaptApiPost));
+      setSavedPosts(posts.map(adaptApiPost));
     } catch (err) {
       console.warn("Failed to load library", err);
     }
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    loadData().finally(() => setLoading(false));
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      if (savedPosts.length === 0) setLoading(true);
+      loadData().finally(() => setLoading(false));
+    }, [loadData, savedPosts.length])
+  );
 
   if (loading) {
     return (
@@ -121,66 +125,82 @@ export default function LibraryScreen({ navigation }: any) {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.surface }}
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + spacing.lg },
-      ]}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            await loadData();
-            setRefreshing(false);
-          }}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      <Text style={styles.title}>Post Saved</Text>
-      <Text style={styles.subtitle}>
-        Every saved post, searchable, forever.
-      </Text>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+      <FlatList
+        data={savedPosts}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + spacing.lg },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await loadData();
+              setRefreshing(false);
+            }}
+            tintColor={colors.primary}
+          />
+        }
+        ListHeaderComponent={
+          <>
+            <Text style={styles.title}>Saved Posts</Text>
+            <Text style={styles.subtitle}>
+              Every saved post, searchable, forever.
+            </Text>
 
-      <View style={styles.statsGrid}>
-        <StatCard
-          label="Problems Solved"
-          value={solvedPosts.length.toLocaleString()}
-          accent={colors.primary}
-          colors={colors}
-        />
-        <StatCard
-          label="Saved"
-          value={String(solvedPosts.filter((p) => p.type === "PROBLEM").length)}
-          colors={colors}
-        />
-        <StatCard
-          label="Solutions"
-          value={String(
-            solvedPosts.filter((p) => p.type === "SOLUTION").length,
-          )}
-          accent={colors.success}
-          colors={colors}
-        />
-        <StatCard
-          label="Trending"
-          value={String(solvedPosts.filter((p) => p.isTrending).length)}
-          accent={colors.warning}
-          colors={colors}
-        />
-      </View>
+            <View style={styles.statsGrid}>
+              <StatCard
+                label="Total Saved"
+                value={savedPosts.length.toLocaleString()}
+                accent={colors.primary}
+                colors={colors}
+              />
+              <StatCard
+                label="Problems"
+                value={String(savedPosts.filter((p) => p.type === "PROBLEM").length)}
+                colors={colors}
+              />
+              <StatCard
+                label="Solutions"
+                value={String(
+                  savedPosts.filter((p) => p.type === "SOLUTION").length,
+                )}
+                accent={colors.success}
+                colors={colors}
+              />
+              <StatCard
+                label="Trending"
+                value={String(savedPosts.filter((p) => p.isTrending).length)}
+                accent={colors.warning}
+                colors={colors}
+              />
+            </View>
 
-      <View style={styles.divider} />
-      <Text style={styles.sectionTitle}>Recently Solved</Text>
-      {solvedPosts.length === 0 ? (
-        <Text style={styles.empty}>No solved problems yet.</Text>
-      ) : (
-        solvedPosts.map((post) => (
+            <View style={styles.divider} />
+            <Text style={styles.sectionTitle}>Recently Saved</Text>
+          </>
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <View style={{ alignItems: "center", paddingVertical: spacing.xxl }}>
+              <Ionicons name="bookmarks-outline" size={64} color={colors.outlineVariant} />
+              <Text style={[styles.empty, { marginTop: spacing.md, textAlign: "center" }]}>
+                No saved posts yet.
+              </Text>
+            </View>
+          ) : null
+        }
+        renderItem={({ item: post }) => (
           <PostCard
-            key={post.id}
             post={post}
+            onToggleSave={(isSaved) => {
+              if (!isSaved) {
+                setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
+              }
+            }}
             onPress={() =>
               navigation.navigate("Home", {
                 screen: "PostDetail",
@@ -188,8 +208,8 @@ export default function LibraryScreen({ navigation }: any) {
               })
             }
           />
-        ))
-      )}
-    </ScrollView>
+        )}
+      />
+    </View>
   );
 }

@@ -10,6 +10,7 @@ import {
   Platform,
   Animated,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -116,8 +117,12 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [otherTyping, setOtherTyping] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
 
   const submitReport = async (reason: string, details: string) => {
     if (!otherUser) return;
@@ -337,13 +342,22 @@ export default function ChatThreadScreen({ navigation, route }: any) {
   );
 
   /* ── Data loading & Socket ──────────────────────────────────── */
-  useEffect(() => {
+  const loadHistory = useCallback(() => {
+    setLoading(true);
+    setError(null);
     getMessages(conversationId)
       .then((history) => setMessages(history))
-      .catch((err) => console.warn("Failed to load messages", err));
-
-    markConversationRead(conversationId).catch(() => { });
+      .catch((err) => {
+        console.warn("Failed to load messages", err);
+        setError("Failed to load conversation history.");
+      })
+      .finally(() => setLoading(false));
   }, [conversationId]);
+
+  useEffect(() => {
+    loadHistory();
+    markConversationRead(conversationId).catch(() => { });
+  }, [loadHistory, conversationId]);
 
   useEffect(() => {
     if (!socket) return;
@@ -374,12 +388,43 @@ export default function ChatThreadScreen({ navigation, route }: any) {
     };
   }, [socket, conversationId]);
 
+  useEffect(() => {
+    if (!socket || !otherUser?.id) return;
+
+    // Check initial status
+    socket.emit("check_user_status", { userId: otherUser.id }, (response: any) => {
+      if (response && typeof response.isOnline === "boolean") {
+        setIsOtherUserOnline(response.isOnline);
+      }
+    });
+
+    const onUserStatusChanged = (payload: { userId: string; isOnline: boolean }) => {
+      if (payload.userId === otherUser.id) {
+        setIsOtherUserOnline(payload.isOnline);
+      }
+    };
+
+    socket.on("user_status_changed", onUserStatusChanged);
+
+    return () => {
+      socket.off("user_status_changed", onUserStatusChanged);
+    };
+  }, [socket, otherUser?.id]);
+
   /* ── Actions ────────────────────────────────────────────────── */
   const handleSend = useCallback(() => {
-    if (!draft.trim() || !socket) return;
-    socket.emit("send_message", { conversationId, content: draft.trim() });
-    setDraft("");
-  }, [draft, socket, conversationId]);
+    if (!draft.trim() || !socket || !connected || isSending) return;
+    setIsSending(true);
+    
+    try {
+      socket.emit("send_message", { conversationId, content: draft.trim() });
+      setDraft("");
+    } catch (err) {
+      console.warn("Failed to send", err);
+    } finally {
+      setIsSending(false);
+    }
+  }, [draft, socket, connected, isSending, conversationId]);
 
   const handleChangeText = useCallback(
     (text: string) => {
@@ -428,7 +473,7 @@ export default function ChatThreadScreen({ navigation, route }: any) {
           <View
             style={[
               styles.onlineDot,
-              !connected && styles.offlineDot,
+              (!connected || !isOtherUserOnline) && styles.offlineDot,
             ]}
           />
         </View>
@@ -442,7 +487,9 @@ export default function ChatThreadScreen({ navigation, route }: any) {
               ? "Connecting…"
               : otherTyping
                 ? "Typing…"
-                : "Online"}
+                : isOtherUserOnline
+                  ? "Online"
+                  : "Offline"}
           </Text>
         </View>
 
@@ -461,73 +508,85 @@ export default function ChatThreadScreen({ navigation, route }: any) {
         </Pressable>
       </View>
 
-      {/* ── Messages ────────────────────────────────────────── */}
-      <FlatList
-        data={messages}
-        inverted
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.sm,
-          paddingBottom: spacing.md,
-        }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => {
-          const isMine = item.senderId !== otherUser?.id;
-          const time = item.createdAt
-            ? new Date(item.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-            : null;
+      {/* ── Message List or Loading/Error ─────────────────────── */}
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.xl }}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error} style={{ marginBottom: spacing.md }} />
+          <Text style={{ color: colors.error, textAlign: "center", ...typography.body }}>{error}</Text>
+          <Pressable onPress={loadHistory} style={{ marginTop: spacing.lg, padding: spacing.sm }}>
+            <Text style={{ color: colors.primary, ...typography.bodyBold }}>Tap to Retry</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          inverted
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            paddingBottom: 20,
+            paddingTop: 10,
+          }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => {
+            const isMine = item.senderId !== otherUser?.id;
+            const time = item.createdAt
+              ? new Date(item.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+              : null;
 
-          // Determine if this is the last message in a cluster (inverted list, so index 0 = newest)
-          const nextMsg = messages[index + 1];
-          const isClusterEnd =
-            !nextMsg || nextMsg.senderId !== item.senderId;
+            const nextMsg = messages[index + 1];
+            const isClusterEnd =
+              !nextMsg || nextMsg.senderId !== item.senderId;
 
-          return (
-            <View>
-              <View
-                style={[
-                  styles.bubbleRow,
-                  isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
-                ]}
-              >
+            return (
+              <View>
                 <View
                   style={[
-                    styles.bubble,
-                    isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                    styles.bubbleRow,
+                    isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
                   ]}
                 >
-                  <Text
-                    style={
-                      isMine
-                        ? styles.bubbleTextMine
-                        : styles.bubbleTextTheirs
-                    }
+                  <View
+                    style={[
+                      styles.bubble,
+                      isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                    ]}
                   >
-                    {item.content}
-                  </Text>
+                    <Text
+                      style={
+                        isMine
+                          ? styles.bubbleTextMine
+                          : styles.bubbleTextTheirs
+                      }
+                    >
+                      {item.content}
+                    </Text>
+                  </View>
                 </View>
+                {isClusterEnd && time && (
+                  <Text
+                    style={[
+                      styles.timestamp,
+                      isMine
+                        ? styles.timestampMine
+                        : styles.timestampTheirs,
+                    ]}
+                  >
+                    {time}
+                  </Text>
+                )}
               </View>
-              {/* Show timestamp only on cluster boundaries */}
-              {isClusterEnd && time && (
-                <Text
-                  style={[
-                    styles.timestamp,
-                    isMine
-                      ? styles.timestampMine
-                      : styles.timestampTheirs,
-                  ]}
-                >
-                  {time}
-                </Text>
-              )}
-            </View>
-          );
-        }}
-      />
+            );
+          }}
+        />
+      )}
 
       {/* ── Typing indicator ────────────────────────────────── */}
       {otherTyping && (
@@ -572,12 +631,10 @@ export default function ChatThreadScreen({ navigation, route }: any) {
               onPress={handleSend}
               onPressIn={handleSendPressIn}
               onPressOut={handleSendPressOut}
-              disabled={!hasDraft}
+              disabled={!hasDraft || !connected || isSending}
               style={[
                 styles.sendBtn,
-                hasDraft
-                  ? styles.sendBtnActive
-                  : styles.sendBtnDisabled,
+                hasDraft && connected && !isSending ? styles.sendBtnActive : styles.sendBtnDisabled,
               ]}
             >
               <Ionicons
