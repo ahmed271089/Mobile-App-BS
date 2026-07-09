@@ -255,6 +255,9 @@ export function PostCard({
           {post.status === "SOLVED" && (
             <Badge label="Solved" variant="success" icon="✓" />
           )}
+          {post.status === "OPEN" && post.type === "PROBLEM" && (
+            <Badge label="Unsolved" variant="warning" icon="?" />
+          )}
           {post.isTrending && (
             <Badge label="Trending" variant="warning" icon="🔥" />
           )}

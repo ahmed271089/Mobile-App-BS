@@ -24,7 +24,7 @@ import {
   toggleFavoritePost,
   deletePost,
 } from "../../api/posts";
-import { createComment, ApiComment } from "../../api/comments";
+import { createComment, toggleLikeComment, deleteComment, updateComment, ApiComment } from "../../api/comments";
 import { createReport } from "../../api/reports";
 import { getMe, ApiUser } from "../../api/users";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
@@ -43,6 +43,10 @@ export default function PostDetailScreen({ navigation, route }: any) {
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: 'POST'|'COMMENT'|'USER', id: string } | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [savingCommentId, setSavingCommentId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
   const styles = React.useMemo(
     () =>
@@ -102,8 +106,16 @@ export default function PostDetailScreen({ navigation, route }: any) {
         },
         commentRow: {
           flexDirection: "row",
-          gap: spacing.sm,
-          marginBottom: spacing.md,
+          marginBottom: spacing.lg,
+          paddingHorizontal: spacing.md,
+        },
+        solutionRow: {
+          backgroundColor: colors.successContainer,
+          borderColor: colors.success,
+          borderWidth: 1,
+          borderRadius: radius.md,
+          paddingVertical: spacing.md,
+          marginHorizontal: spacing.xs,
         },
         commentAvatar: {
           width: 32,
@@ -179,8 +191,10 @@ export default function PostDetailScreen({ navigation, route }: any) {
       await createComment(id, commentText.trim());
       setCommentText("");
       loadData();
-    } catch (err) {
-      Alert.alert("Error", "Could not post comment.");
+    } catch (err: any) {
+      let msg = "Could not post comment.";
+      try { msg = JSON.parse(err.message).message || msg; } catch {}
+      Alert.alert("Error", msg);
     } finally {
       setSubmitting(false);
     }
@@ -282,6 +296,112 @@ export default function PostDetailScreen({ navigation, route }: any) {
     ]);
   };
 
+  const handleToggleCommentLike = async (commentId: string) => {
+    setPost((prev: any) => {
+      if (!prev) return prev;
+      const updatedComments = prev.comments.map((c: any) => {
+        if (c.id === commentId) {
+          const wasLiked = !!c.isLiked;
+          return {
+            ...c,
+            isLiked: !wasLiked,
+            likesCount: wasLiked ? Math.max(0, c.likesCount - 1) : c.likesCount + 1,
+          };
+        }
+        return c;
+      });
+      return { ...prev, comments: updatedComments };
+    });
+
+    try {
+      const res = await toggleLikeComment(id, commentId);
+      setPost((prev: any) => {
+        if (!prev) return prev;
+        const updatedComments = prev.comments.map((c: any) => {
+          if (c.id === commentId) {
+            return { ...c, isLiked: res.data.liked };
+          }
+          return c;
+        });
+        return { ...prev, comments: updatedComments };
+      });
+    } catch {
+      Alert.alert("Error", "Could not update like.");
+      setPost((prev: any) => {
+        if (!prev) return prev;
+        const updatedComments = prev.comments.map((c: any) => {
+          if (c.id === commentId) {
+            const wasLiked = !!c.isLiked;
+            return {
+              ...c,
+              isLiked: !wasLiked,
+              likesCount: wasLiked ? Math.max(0, c.likesCount - 1) : c.likesCount + 1,
+            };
+          }
+          return c;
+        });
+        return { ...prev, comments: updatedComments };
+      });
+    }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    Alert.alert("Delete Comment", "Are you sure you want to delete this comment?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setDeletingCommentId(commentId);
+          try {
+            await deleteComment(id, commentId);
+            setPost((prev: any) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                comments: prev.comments.filter((c: any) => c.id !== commentId),
+                commentsCount: Math.max(0, prev.commentsCount - 1),
+              };
+            });
+            loadData();
+          } catch (err: any) {
+            let msg = "Could not delete comment.";
+            try { msg = JSON.parse(err.message).message || msg; } catch {}
+            Alert.alert("Error", msg);
+          } finally {
+            setDeletingCommentId(null);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleSaveEditComment = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    setSavingCommentId(commentId);
+    try {
+      await updateComment(id, commentId, editCommentText.trim());
+      setPost((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments: prev.comments.map((c: any) =>
+            c.id === commentId ? { ...c, content: editCommentText.trim() } : c
+          ),
+        };
+      });
+      setEditingCommentId(null);
+      setEditCommentText("");
+      loadData();
+    } catch (err: any) {
+      let msg = "Could not update comment.";
+      try { msg = JSON.parse(err.message).message || msg; } catch {}
+      Alert.alert("Error", msg);
+    } finally {
+      setSavingCommentId(null);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
@@ -342,6 +462,8 @@ export default function PostDetailScreen({ navigation, route }: any) {
           <Badge label={post.category.name} variant="info" />
           {post.status === "SOLVED" ? (
             <Badge label="Solved" variant="success" icon="✓" />
+          ) : post.type === "PROBLEM" ? (
+            <Badge label="Unsolved" variant="warning" icon="?" />
           ) : (
             <Badge label="Open" variant="warning" />
           )}
@@ -399,8 +521,12 @@ export default function PostDetailScreen({ navigation, route }: any) {
         <Text style={styles.sectionTitle}>
           Comments ({post.comments?.length ?? 0})
         </Text>
-        {(post.comments ?? []).map((c: ApiComment) => (
-          <View key={c.id} style={styles.commentRow}>
+        {[...(post.comments ?? [])].sort((a, b) => {
+          if (a.id === post.solvedCommentId) return -1;
+          if (b.id === post.solvedCommentId) return 1;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }).map((c: ApiComment) => (
+          <View key={c.id} style={[styles.commentRow, post.solvedCommentId === c.id && styles.solutionRow]}>
             <View style={styles.commentAvatar}>
               <Text style={styles.commentAvatarText}>
                 {c.author.name.slice(0, 2).toUpperCase()}
@@ -425,7 +551,11 @@ export default function PostDetailScreen({ navigation, route }: any) {
                   {formatRelativeTime(c.createdAt)}
                 </Text>
                 {currentUser?.id !== c.author.id && (
-                  <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: spacing.sm, alignItems: 'center' }}>
+                    <Pressable onPress={() => handleToggleCommentLike(c.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: spacing.sm }}>
+                      <Ionicons name={c.isLiked ? "heart" : "heart-outline"} size={16} color={c.isLiked ? colors.error : colors.onSurfaceVariant} />
+                      <Text style={{ ...typography.caption, color: colors.onSurfaceVariant }}>{c.likesCount}</Text>
+                    </Pressable>
                     <Pressable onPress={() => handleReport('USER', c.author.id)}>
                       <Ionicons name="person-remove-outline" size={14} color={colors.error} />
                     </Pressable>
@@ -434,8 +564,47 @@ export default function PostDetailScreen({ navigation, route }: any) {
                     </Pressable>
                   </View>
                 )}
+                {currentUser?.id === c.author.id && (
+                  <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: spacing.sm, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: spacing.sm }}>
+                      <Ionicons name="heart" size={16} color={colors.error} />
+                      <Text style={{ ...typography.caption, color: colors.onSurfaceVariant }}>{c.likesCount}</Text>
+                    </View>
+                    <Pressable onPress={() => {
+                      setEditingCommentId(c.id);
+                      setEditCommentText(c.content);
+                    }}>
+                      <Ionicons name="pencil-outline" size={14} color={colors.onSurfaceVariant} />
+                    </Pressable>
+                    <Pressable onPress={() => handleDeleteComment(c.id)} disabled={deletingCommentId === c.id}>
+                      {deletingCommentId === c.id ? <ActivityIndicator size={14} color={colors.error} /> : <Ionicons name="trash-outline" size={14} color={colors.error} />}
+                    </Pressable>
+                  </View>
+                )}
               </View>
-              <Text style={styles.commentText}>{c.content}</Text>
+
+              {editingCommentId === c.id ? (
+                <View style={{ marginTop: spacing.sm }}>
+                  <TextInput
+                    value={editCommentText}
+                    onChangeText={setEditCommentText}
+                    style={{ ...typography.body, color: colors.onSurface, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.surfaceContainer, borderWidth: 1, borderColor: colors.primary, minHeight: 60 }}
+                    multiline
+                    autoFocus
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.xs, gap: spacing.sm }}>
+                    <Pressable onPress={() => setEditingCommentId(null)} style={{ paddingVertical: 4, paddingHorizontal: 12, borderRadius: radius.sm, backgroundColor: colors.surfaceContainerHigh }}>
+                      <Text style={{ ...typography.caption, color: colors.onSurfaceVariant }}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={() => handleSaveEditComment(c.id)} disabled={savingCommentId === c.id} style={{ paddingVertical: 4, paddingHorizontal: 12, borderRadius: radius.sm, backgroundColor: colors.primary, minWidth: 50, alignItems: 'center' }}>
+                      {savingCommentId === c.id ? <ActivityIndicator size={14} color={colors.onPrimary} /> : <Text style={{ ...typography.caption, color: colors.onPrimary }}>Save</Text>}
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.commentText}>{c.content}</Text>
+              )}
+
               {post.status !== "SOLVED" &&
                 post.type === "PROBLEM" &&
                 currentUser?.id === post.author.id && (
@@ -466,7 +635,7 @@ export default function PostDetailScreen({ navigation, route }: any) {
             style={styles.sendCommentBtn}
             disabled={submitting}
           >
-            <Ionicons name="send" size={16} color={colors.onPrimary} />
+            {submitting ? <ActivityIndicator size={16} color={colors.onPrimary} /> : <Ionicons name="send" size={16} color={colors.onPrimary} />}
           </Pressable>
         </View>
 
