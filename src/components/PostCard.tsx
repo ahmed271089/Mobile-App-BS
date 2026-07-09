@@ -10,9 +10,11 @@ import { toggleFavoritePost } from "../api/posts";
 export function PostCard({
   post,
   onPress,
+  onToggleSave,
 }: {
   post: MockPost;
   onPress?: () => void;
+  onToggleSave?: (isSaved: boolean) => void;
 }) {
   const colors = useColors();
   const [commentText, setCommentText] = useState("");
@@ -20,12 +22,15 @@ export function PostCard({
   const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
 
   const [localLastComment, setLocalLastComment] = useState(post.lastComment);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState((post as any).isSaved || false);
 
   useEffect(() => {
     setLocalCommentsCount(post.commentsCount);
     setLocalLastComment(post.lastComment);
-  }, [post.commentsCount, post.lastComment]);
+    if ((post as any).isSaved !== undefined) {
+      setIsSaved((post as any).isSaved);
+    }
+  }, [post.commentsCount, post.lastComment, (post as any).isSaved]);
 
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
@@ -39,6 +44,25 @@ export function PostCard({
       Alert.alert("Error", "Could not post comment.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleSave = async () => {
+    const previousState = isSaved;
+    const newState = !previousState;
+    setIsSaved(newState);
+    if (onToggleSave) onToggleSave(newState);
+    
+    try {
+      const res = await toggleFavoritePost(post.id);
+      setIsSaved(res.data.favorited);
+      if (onToggleSave && res.data.favorited !== newState) {
+        onToggleSave(res.data.favorited);
+      }
+    } catch (err) {
+      setIsSaved(previousState);
+      if (onToggleSave) onToggleSave(previousState);
+      Alert.alert("Error", "Could not save the post.");
     }
   };
 
@@ -69,9 +93,16 @@ export function PostCard({
         },
         topRow: {
           flexDirection: "row",
-          gap: spacing.xs,
+          justifyContent: "space-between",
+          alignItems: "flex-start",
           marginBottom: spacing.sm,
+        },
+        badgeContainer: {
+          flexDirection: "row",
+          gap: spacing.xs,
           flexWrap: "wrap",
+          flex: 1,
+          paddingRight: spacing.sm,
         },
         title: {
           ...typography.h3,
@@ -216,7 +247,7 @@ export function PostCard({
       <Thumbnail seed={post.thumbnail} />
 
       <View style={styles.topRow}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+        <View style={styles.badgeContainer}>
           <Badge
             label={post.type}
             variant={post.type === "PROBLEM" ? "danger" : "success"}
@@ -230,10 +261,24 @@ export function PostCard({
           {post.isHidden && (
             <Badge label="Hidden" variant="danger" icon="🚫" />
           )}
+          {post.author.verified ? (
+            <Badge label="Verified" variant="success" icon="✓" />
+          ) : null}
+          {isSaved && (
+            <Badge label="Saved" variant="primary" icon="🔖" />
+          )}
         </View>
-        {post.author.verified ? (
-          <Badge label="Verified" variant="success" icon="✓" />
-        ) : null}
+        <Pressable
+          onPress={handleToggleSave}
+          hitSlop={8}
+          style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons
+            name={isSaved ? "bookmark" : "bookmark-outline"}
+            size={22}
+            color={isSaved ? colors.primary : colors.onSurfaceVariant}
+          />
+        </Pressable>
       </View>
 
       <Text style={styles.title} numberOfLines={2}>

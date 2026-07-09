@@ -94,7 +94,7 @@ export default function ProfileScreen({ navigation }: any) {
           justifyContent: "center",
         },
         avatarImage: { width: 72, height: 72, borderRadius: 36 },
-        avatarText: { ...typography.h1, color: colors.primary },
+        avatarText: { ...typography.h1, color: colors.white },
         cameraBadge: {
           position: "absolute",
           bottom: 0,
@@ -117,7 +117,7 @@ export default function ProfileScreen({ navigation }: any) {
           marginTop: spacing.lg,
           width: "100%",
         },
-        statItem: { flex: 1, alignItems: "center" },
+        statItem: { flex: 1, alignItems: "center", paddingHorizontal: spacing.xs },
         statDivider: {
           width: 1,
           height: 30,
@@ -128,6 +128,7 @@ export default function ProfileScreen({ navigation }: any) {
           ...typography.caption,
           color: colors.onSurfaceVariant,
           marginTop: 2,
+          textAlign: "center",
         },
         sectionTitle: {
           ...typography.h3,
@@ -354,12 +355,12 @@ export default function ProfileScreen({ navigation }: any) {
             <Text style={styles.statValue}>
               {(user?.reputationPoints ?? 0).toLocaleString()}
             </Text>
-            <Text style={styles.statLabel}>Reputation</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Reputation</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{user?.expertise?.length ?? 0}</Text>
-            <Text style={styles.statLabel}>Categories</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Categories</Text>
           </View>
         </View>
 
@@ -369,21 +370,21 @@ export default function ProfileScreen({ navigation }: any) {
               <Text style={[styles.statValue, { color: colors.primary }]}>
                 #{user?.rank ?? '-'}
               </Text>
-              <Text style={styles.statLabel}>Global Rank</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Global Rank</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
                 {(user?.activityScore ?? 0).toLocaleString()}
               </Text>
-              <Text style={styles.statLabel}>Contributions</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Contributions</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
                 {user?.isVerified ? "Yes" : "No"}
               </Text>
-              <Text style={styles.statLabel}>Verified</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Verified</Text>
             </View>
           </View>
         )}
@@ -417,7 +418,7 @@ export default function ProfileScreen({ navigation }: any) {
         onPress={() => navigation.navigate("Leaderboard")}
       >
         <View style={styles.listIcon}>
-          <Ionicons name="trophy-outline" size={18} color={colors.primary} />
+          <Ionicons name="trophy-outline" size={18} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.listTitle}>Leaderboard</Text>
@@ -434,7 +435,7 @@ export default function ProfileScreen({ navigation }: any) {
         onPress={() => navigation.navigate("Chat", { screen: "Friends" })}
       >
         <View style={styles.listIcon}>
-          <Ionicons name="people-outline" size={18} color={colors.primary} />
+          <Ionicons name="people-outline" size={18} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.listTitle}>My Friends</Text>
@@ -454,7 +455,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Ionicons
             name="person-add-outline"
             size={18}
-            color={colors.primary}
+            color={colors.white}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -470,7 +471,7 @@ export default function ProfileScreen({ navigation }: any) {
         onPress={() => navigation.navigate("Chat", { screen: "AddFriend" })}
       >
         <View style={styles.listIcon}>
-          <Ionicons name="search-outline" size={18} color={colors.primary} />
+          <Ionicons name="search-outline" size={18} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.listTitle}>Add Friend</Text>
@@ -495,7 +496,7 @@ export default function ProfileScreen({ navigation }: any) {
             <Ionicons
               name="color-palette-outline"
               size={18}
-              color={colors.primary}
+              color={colors.white}
             />
           </View>
           <View style={{ flex: 1 }}>

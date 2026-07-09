@@ -59,6 +59,11 @@ export default function ConversationsListScreen({ navigation }: any) {
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.outlineVariant,
         },
+        time: {
+          ...typography.caption,
+          color: colors.onSurfaceVariant,
+          fontSize: 12,
+        },
         avatar: {
           width: 44,
           height: 44,
@@ -177,27 +182,42 @@ export default function ConversationsListScreen({ navigation }: any) {
             paddingBottom: spacing.xl,
           }}
           renderItem={({ item }) => {
-            const other = item.otherParticipants[0];
+            const isGroup = item.isGroup;
+            const title = isGroup && item.otherParticipants.length > 0
+              ? item.otherParticipants.map((p: any) => p.name.split(' ')[0]).join(", ")
+              : item.otherParticipants[0]?.name ?? "Unknown user";
+
+            const initials = isGroup
+              ? "👥"
+              : item.otherParticipants[0]?.name?.slice(0, 2).toUpperCase() ?? "??";
+
             const unread = (item.unreadCount ?? 0) > 0;
+            const time = item.lastMessage?.createdAt
+              ? new Date(item.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : "";
+
             return (
               <Pressable
                 style={styles.row}
                 onPress={() =>
                   navigation.navigate("ChatThread", {
                     conversationId: item.id,
-                    otherUser: other,
+                    otherUser: item.otherParticipants[0],
                   })
                 }
               >
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
-                    {other?.name?.slice(0, 2).toUpperCase() ?? "??"}
+                    {initials}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={unread ? styles.nameUnread : styles.name}>
-                    {other?.name ?? "Unknown user"}
-                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text style={unread ? styles.nameUnread : styles.name} numberOfLines={1}>
+                      {title}
+                    </Text>
+                    {time ? <Text style={styles.time}>{time}</Text> : null}
+                  </View>
                   <Text style={unread ? styles.previewUnread : styles.preview} numberOfLines={1}>
                     {item.lastMessage?.content ?? "Say hello 👋"}
                   </Text>
