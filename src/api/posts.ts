@@ -69,9 +69,10 @@ export function getFavorites() {
   return api.get<ApiPost[]>('/posts/favorites');
 }
 
-export function searchPosts(q: string, categoryId?: string) {
+export function searchPosts(q: string, categoryId?: string, cursor?: string) {
   const query = new URLSearchParams({ q });
   if (categoryId) query.set('categoryId', categoryId);
+  if (cursor) query.set('cursor', cursor);
   return api.get<ApiPost[]>(`/posts/search?${query.toString()}`);
 }
 
