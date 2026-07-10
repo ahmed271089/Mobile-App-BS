@@ -14,6 +14,7 @@ export interface MockPost {
     verified?: boolean;
     reputationPoints?: number;
     reputationLevel?: string;
+    avatarUrl: string
   };
   thumbnail: string;
   likesCount: number;
@@ -21,7 +22,7 @@ export interface MockPost {
   isTrending: boolean;
   isHidden?: boolean;
   createdAt: string;
-  lastComment?: { authorName: string; content: string };
+  lastComment?: { authorName: string; content: string; authorAvatar: string };
 }
 
 export const categories = [

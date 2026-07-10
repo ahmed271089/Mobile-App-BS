@@ -34,6 +34,7 @@ export function adaptApiPost(post: ApiPost): MockPost {
       verified: post.author.reputationPoints > 5000,
       reputationPoints: post.author.reputationPoints,
       reputationLevel: post.author.reputationLevel,
+      avatarUrl: post.author.avatarUrl
     },
     thumbnail: post.attachments[0]?.url ? post.attachments[0].url.replace(/http:\/\/localhost:\d+/, UPLOADS_BASE_URL) : post.id,
     commentsCount: post._count?.comments ?? post.commentsCount,
@@ -46,6 +47,7 @@ export function adaptApiPost(post: ApiPost): MockPost {
         lastComment: {
           authorName: post.comments[0].author.name,
           content: post.comments[0].content,
+          authorAvatar: post.comments[0].author.avatarUrl
         },
       }
       : {}),

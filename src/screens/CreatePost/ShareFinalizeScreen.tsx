@@ -102,6 +102,7 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
   } = route.params ?? {};
   const [shareToFeed, setShareToFeed] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const styles = React.useMemo(
     () => ({
@@ -187,25 +188,27 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
     }
 
     setPosting(true);
+    setUploadProgress(0);
     try {
-      const attachments = images.length
-        ? await Promise.all(
-            images.map(
-              async (img: {
-                uri: string;
-                mimeType?: string;
-                fileName?: string;
-              }) => {
-                const uploaded = await uploadFile(
-                  img.uri,
-                  normalizeMimeType(img.mimeType ?? "image/jpeg"),
-                  img.fileName ?? `photo-${Date.now()}.jpg`,
-                );
-                return { type: uploaded.type, url: uploaded.url };
-              },
-            ),
-          )
-        : [];
+      const attachments = [];
+      let completedFiles = 0;
+      
+      for (const img of images) {
+        const uploaded = await uploadFile(
+          img.uri,
+          normalizeMimeType(img.mimeType ?? "image/jpeg"),
+          img.fileName ?? `photo-${Date.now()}.jpg`,
+          (fileProgress) => {
+            const baseProgress = (completedFiles / images.length) * 100;
+            const currentFileProgress = fileProgress / images.length;
+            setUploadProgress(Math.round(baseProgress + currentFileProgress));
+          }
+        );
+        attachments.push({ type: uploaded.type, url: uploaded.url });
+        completedFiles++;
+      }
+      
+      setUploadProgress(100);
 
       await createPost({
         type,
@@ -308,10 +311,16 @@ export default function ShareFinalizeScreen({ navigation, route }: any) {
 
       <Button
         label="Share Now"
-        style={{ marginTop: spacing.xl, marginBottom: spacing.lg }}
+        style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}
         loading={posting}
         onPress={handlePost}
       />
+      
+      {posting && images.length > 0 && (
+        <Text style={{ textAlign: "center", ...typography.caption, color: colors.primary, marginBottom: spacing.lg }}>
+          Uploading media: {uploadProgress}%
+        </Text>
+      )}
     </ScrollView>
   );
 }

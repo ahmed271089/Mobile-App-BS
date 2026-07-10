@@ -154,7 +154,7 @@ export default function ChooseTypeScreen({ navigation }: any) {
   );
 
   return (
-    <ScrollView 
+    <ScrollView
       style={{ flex: 1, backgroundColor: colors.surface }}
       contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.lg, flexGrow: 1, paddingBottom: spacing.xl + insets.bottom }]}
     >

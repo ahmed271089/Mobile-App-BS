@@ -21,7 +21,7 @@ export interface ApiPost {
   comments?: {
     id: string;
     content: string;
-    author: { name: string; reputationPoints?: number; reputationLevel?: string; };
+    author: { name: string; reputationPoints?: number; reputationLevel?: string; avatarUrl: string };
   }[];
 }
 

@@ -13,7 +13,12 @@ export interface UploadResult {
  * Uploads a file picked via expo-image-picker. `localUri` is the file:// path
  * ImagePicker gives you; `mimeType` and `fileName` come from the picker result too.
  */
-export async function uploadFile(localUri: string, mimeType: string, fileName: string): Promise<UploadResult> {
+export async function uploadFile(
+  localUri: string,
+  mimeType: string,
+  fileName: string,
+  onProgress?: (progress: number) => void
+): Promise<UploadResult> {
   const token = await getAccessToken();
   if (!token) {
     throw new ApiError(401, JSON.stringify({ message: 'You must be logged in to upload files.' }));
@@ -38,19 +43,35 @@ export async function uploadFile(localUri: string, mimeType: string, fileName: s
     } as any);
   }
 
-  const res = await fetch(`${UPLOADS_BASE_URL}/uploads`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      // Do NOT set Content-Type manually here — fetch needs to set its own
-      // multipart boundary, and overriding it breaks the upload silently.
-    },
-    body: formData,
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch (e) {
+          reject(new ApiError(xhr.status, 'Invalid JSON response'));
+        }
+      } else {
+        reject(new ApiError(xhr.status, xhr.responseText));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new ApiError(500, 'Network request failed'));
+    });
+
+    xhr.open('POST', `${UPLOADS_BASE_URL}/uploads`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    // Do NOT set Content-Type manually, the browser/XHR engine sets it with the boundary automatically
+    xhr.send(formData);
   });
-
-  if (!res.ok) {
-    throw new ApiError(res.status, await res.text());
-  }
-
-  return res.json();
 }

@@ -68,13 +68,14 @@ export default function ConversationsListScreen({ navigation }: any) {
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: colors.primaryContainer,
+          backgroundColor: colors.primary,
           alignItems: "center",
           justifyContent: "center",
+
         },
         avatarText: {
           ...typography.caption,
-          color: colors.primary,
+          color: colors.card,
           fontWeight: "700",
         },
         name: { ...typography.bodyBold, color: colors.onSurface },

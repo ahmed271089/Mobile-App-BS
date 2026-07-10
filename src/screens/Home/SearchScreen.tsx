@@ -38,7 +38,7 @@ export default function SearchScreen({ navigation }: any) {
         header: {
           flexDirection: "row",
           alignItems: "center",
-          gap: spacing.md,
+          gap: spacing.sm,
           paddingHorizontal: spacing.lg,
         },
         backBtn: {
@@ -133,16 +133,17 @@ export default function SearchScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg, marginBottom: 0 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
         </Pressable>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: "center" }}>
           <Input
             placeholder="Search the solved library…"
             value={query}
             onChangeText={setQuery}
             autoFocus
+            style={{ marginBottom: 0 }}
             icon={
               <Ionicons
                 name="search"
