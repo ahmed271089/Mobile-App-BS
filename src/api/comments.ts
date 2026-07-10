@@ -6,7 +6,7 @@ export interface ApiComment {
   content: string;
   isAIComment: boolean;
   likesCount: number;
-  isLiked?: boolean;
+  userVote?: number;
   createdAt: string;
   author: { id: string; name: string; avatarUrl: string | null; reputationPoints?: number; reputationLevel?: string; };
 }
@@ -19,8 +19,8 @@ export function createComment(postId: string, content: string, parentId?: string
   return api.post<ApiComment>(`/posts/${postId}/comments`, { content, parentId });
 }
 
-export function toggleLikeComment(postId: string, commentId: string) {
-  return api.post<{ liked: boolean }>(`/posts/${postId}/comments/${commentId}/like`);
+export function voteComment(postId: string, commentId: string, value: number) {
+  return api.post<{ userVote: number }>(`/posts/${postId}/comments/${commentId}/vote`, { value });
 }
 
 export function updateComment(postId: string, commentId: string, content: string) {

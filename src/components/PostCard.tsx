@@ -37,7 +37,7 @@ export function PostCard({
     setSubmitting(true);
     try {
       await createComment(post.id, commentText.trim());
-      setLocalLastComment({ authorName: "You", content: commentText.trim() });
+      setLocalLastComment({ authorName: "You", content: commentText.trim(), authorAvatar: post.author.avatarUrl });
       setCommentText("");
       setLocalCommentsCount((prev) => prev + 1);
     } catch (err) {
@@ -52,10 +52,10 @@ export function PostCard({
     const newState = !previousState;
     setIsSaved(newState);
     if (onToggleSave) onToggleSave(newState);
-    
+
     try {
       const res = await toggleFavoritePost(post.id);
-      setIsSaved(res.data.favorited);
+      setIsSaved(res?.data.favorited);
       if (onToggleSave && res.data.favorited !== newState) {
         onToggleSave(res.data.favorited);
       }
@@ -74,7 +74,7 @@ export function PostCard({
           borderRadius: radius.lg,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
-          padding: spacing.md,
+          // padding: spacing.md,
           marginBottom: spacing.lg,
           ...Platform.select({
             ios: {
@@ -86,9 +86,15 @@ export function PostCard({
             android: { elevation: 2 },
           }),
         },
+        container: {
+          padding: spacing.sm,
+          paddingTop: 0
+        },
         thumbnail: {
-          height: 140,
-          borderRadius: radius.md,
+          height: 200,
+          width: "100%",
+          borderTopLeftRadius: radius.md,
+          borderTopRightRadius: radius.md,
           marginBottom: spacing.md,
         },
         topRow: {
@@ -165,51 +171,71 @@ export function PostCard({
           color: colors.onSurfaceVariant,
         },
         lastCommentRow: {
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: spacing.sm,
           marginTop: spacing.sm,
           paddingHorizontal: spacing.sm,
-          paddingVertical: spacing.xs,
-          backgroundColor: colors.surfaceContainerLow,
+          paddingVertical: spacing.sm,
+          backgroundColor: colors.surfaceDim,
           borderRadius: radius.md,
         },
         lastCommentAuthor: {
           ...typography.caption,
           fontWeight: "bold",
           color: colors.onSurface,
+          marginBottom: 2,
         },
         lastCommentText: {
           ...typography.caption,
           color: colors.onSurfaceVariant,
         },
-        commentInputRow: {
+        commentSection: {
           flexDirection: "row",
           alignItems: "center",
-          marginTop: spacing.xs,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.outlineVariant,
-          paddingTop: spacing.sm,
+          gap: spacing.sm,
+          marginTop: spacing.md,
+        },
+        currentUserAvatar: {
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: colors.primary,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        currentUserAvatarText: {
+          color: colors.onPrimary,
+          fontSize: 12,
+          fontWeight: "bold",
+        },
+        inputPill: {
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.surfaceContainerLowest,
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: colors.outlineVariant,
+          paddingLeft: spacing.md,
+          paddingRight: 4,
+          height: 40,
         },
         commentInput: {
           flex: 1,
-          height: 36,
-          backgroundColor: colors.surfaceContainerLow,
-          borderRadius: 18,
-          paddingHorizontal: spacing.md,
           ...typography.body,
           color: colors.onSurface,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.outlineVariant,
         },
         sendBtn: {
-          marginLeft: spacing.sm,
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: colors.primaryContainer,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: colors.primary,
           alignItems: "center",
           justifyContent: "center",
         },
         sendBtnDisabled: {
-          backgroundColor: colors.surfaceContainerHigh,
+          backgroundColor: "transparent",
         },
       }),
     [colors],
@@ -246,157 +272,186 @@ export function PostCard({
     >
       <Thumbnail seed={post.thumbnail} />
 
-      <View style={styles.topRow}>
-        <View style={styles.badgeContainer}>
-          <Badge
-            label={post.type}
-            variant={post.type === "PROBLEM" ? "danger" : "success"}
-          />
-          {post.status === "SOLVED" && (
-            <Badge label="Solved" variant="success" icon="✓" />
-          )}
-          {post.status === "OPEN" && post.type === "PROBLEM" && (
-            <Badge label="Unsolved" variant="warning" icon="?" />
-          )}
-          {post.isTrending && (
-            <Badge label="Trending" variant="warning" icon="🔥" />
-          )}
-          {post.isHidden && (
-            <Badge label="Hidden" variant="danger" icon="🚫" />
-          )}
-          {post.author.verified ? (
-            <Badge label="Verified" variant="success" icon="✓" />
-          ) : null}
-          {isSaved && (
-            <Badge label="Saved" variant="primary" icon="🔖" />
-          )}
-        </View>
-        <Pressable
-          onPress={handleToggleSave}
-          hitSlop={8}
-          style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons
-            name={isSaved ? "bookmark" : "bookmark-outline"}
-            size={22}
-            color={isSaved ? colors.primary : colors.onSurfaceVariant}
-          />
-        </Pressable>
-      </View>
 
-      <Text style={styles.title} numberOfLines={2}>
-        {post.title}
-      </Text>
-      <Text style={styles.description} numberOfLines={2}>
-        {post.description}
-      </Text>
+      <View style={styles.container}>
 
-      <View style={styles.footer}>
-        <View style={styles.authorRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{post.author.avatar}</Text>
-          </View>
-          <Text style={styles.authorName}>{post.author.name}</Text>
-          {post.author.reputationLevel && (
-            <Text style={{ ...typography.caption, color: colors.primary, fontWeight: 'bold', marginLeft: 4 }}>
-              · {post.author.reputationLevel}
-            </Text>
-          )}
-          {post.author.reputationPoints !== undefined ? (
-            <Text style={{ ...typography.caption, color: colors.primary, marginLeft: 4 }}>
-              ({post.author.reputationPoints.toLocaleString()})
-            </Text>
-          ) : null}
-          <Text style={styles.dot}>·</Text>
-          <Text style={styles.time}>{post.createdAt}</Text>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Ionicons
-              name="chatbubble-outline"
-              size={14}
-              color={colors.onSurfaceVariant}
+        <View style={styles.topRow}>
+          <View style={styles.badgeContainer}>
+            <Badge
+              label={post.type}
+              variant={post.type === "PROBLEM" ? "danger" : "success"}
             />
-            <Text style={styles.statText}>{localCommentsCount}</Text>
+            {post.status === "SOLVED" && (
+              <Badge label="Solved" variant="success" icon="✓" />
+            )}
+            {post.status === "OPEN" && post.type === "PROBLEM" && (
+              <Badge label="Unsolved" variant="neutral" />
+            )}
+            {post.isTrending && (
+              <Badge label="Trending" variant="warning" icon="🔥" />
+            )}
+            {post.isHidden && (
+              <Badge label="Hidden" variant="danger" icon="🚫" />
+            )}
+            {post.author.verified ? (
+              <Badge label="Verified" variant="success" icon="✓" />
+            ) : null}
+            {isSaved && (
+              <Badge label="Saved" variant="primary" icon="🔖" />
+            )}
           </View>
-          <View style={styles.statItem}>
-            <Ionicons
-              name="heart-outline"
-              size={14}
-              color={colors.onSurfaceVariant}
-            />
-            <Text style={styles.statText}>{post.likesCount}</Text>
-          </View>
-          <Pressable 
-            style={styles.statItem} 
-            onPress={async (e) => {
-              if (e && e.stopPropagation) {
-                e.stopPropagation();
-              }
-              const newSavedState = !isSaved;
-              setIsSaved(newSavedState);
-              try {
-                await toggleFavoritePost(post.id);
-              } catch (err) {
-                setIsSaved(!newSavedState);
-                Alert.alert("Error", "Could not save post.");
-              }
-            }}
+          <Pressable
+            onPress={handleToggleSave}
+            hitSlop={8}
+            style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons
               name={isSaved ? "bookmark" : "bookmark-outline"}
-              size={14}
+              size={22}
               color={isSaved ? colors.primary : colors.onSurfaceVariant}
             />
           </Pressable>
         </View>
-      </View>
 
-      {localLastComment ? (
-        <View style={styles.lastCommentRow}>
-          <Text style={styles.lastCommentAuthor}>{localLastComment.authorName}</Text>
-          <Text style={styles.lastCommentText} numberOfLines={2}>
-            {localLastComment.content}
-          </Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {post.title}
+        </Text>
+        <Text style={styles.description} numberOfLines={2}>
+          {post.description}
+        </Text>
+
+        <View style={styles.footer}>
+          <View style={styles.authorRow}>
+            <View style={styles.avatar}>
+              {
+                post.author.avatarUrl ? <Image
+                  source={{ uri: post.author.avatarUrl }}
+                  style={styles.avatar}
+                /> : <Text style={styles.avatarText}>{post.author.avatar}</Text>
+              }
+            </View>
+            <Text style={styles.authorName}>{post.author.name}</Text>
+            {post.author.reputationLevel && (
+              <Text style={{ ...typography.caption, color: colors.primary, fontWeight: 'bold', marginLeft: 4 }}>
+                · {post.author.reputationLevel}
+              </Text>
+            )}
+            {post.author.reputationPoints !== undefined ? (
+              <Text style={{ ...typography.caption, color: colors.primary, marginLeft: 4 }}>
+                ({post.author.reputationPoints.toLocaleString()})
+              </Text>
+            ) : null}
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.time}>{post.createdAt}</Text>
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Ionicons
+                name="chatbubble-outline"
+                size={14}
+                color={colors.onSurfaceVariant}
+              />
+              <Text style={styles.statText}>{localCommentsCount}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Ionicons
+                name="heart-outline"
+                size={14}
+                color={colors.onSurfaceVariant}
+              />
+              <Text style={styles.statText}>{post.likesCount}</Text>
+            </View>
+            <Pressable
+              style={styles.statItem}
+              onPress={async (e) => {
+                if (e && e.stopPropagation) {
+                  e.stopPropagation();
+                }
+                const newSavedState = !isSaved;
+                setIsSaved(newSavedState);
+                try {
+                  await toggleFavoritePost(post.id);
+                } catch (err) {
+                  setIsSaved(!newSavedState);
+                  Alert.alert("Error", "Could not save post.");
+                }
+              }}
+            >
+              <Ionicons
+                name={isSaved ? "bookmark" : "bookmark-outline"}
+                size={14}
+                color={isSaved ? colors.primary : colors.onSurfaceVariant}
+              />
+            </Pressable>
+          </View>
         </View>
-      ) : null}
 
-      <Pressable
-        style={styles.commentInputRow}
-        onPress={(e) => {
-          if (e && e.stopPropagation) {
-            e.stopPropagation();
-          }
-        }}
-      >
-        <TextInput
-          style={styles.commentInput}
-          placeholder="Write a comment..."
-          placeholderTextColor={colors.onSurfaceVariant}
-          value={commentText}
-          onChangeText={setCommentText}
-          onSubmitEditing={handleSubmitComment}
-          returnKeyType="send"
-          maxLength={500}
-        />
+        {localLastComment ? (
+          <View style={styles.lastCommentRow}>
+            <View style={styles.avatar}>
+              {localLastComment.authorAvatar ? <Image
+                source={{ uri: localLastComment.authorAvatar }}
+                style={styles.avatar}
+              /> : <Text style={styles.avatarText}>{localLastComment.authorName.charAt(0).toUpperCase()}</Text>}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lastCommentAuthor}>{localLastComment.authorName.toUpperCase()}</Text>
+              <Text style={styles.lastCommentText} numberOfLines={2}>
+                {localLastComment.content}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <Pressable
-          style={[styles.sendBtn, (!commentText.trim() || submitting) && styles.sendBtnDisabled]}
+          style={styles.commentSection}
           onPress={(e) => {
             if (e && e.stopPropagation) {
               e.stopPropagation();
             }
-            handleSubmitComment();
           }}
-          disabled={!commentText.trim() || submitting}
         >
-          {submitting ? (
-            <ActivityIndicator size="small" color={colors.onPrimaryContainer} />
-          ) : (
-            <Ionicons name="send" size={16} color={commentText.trim() ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
-          )}
+          <View style={styles.currentUserAvatar}>
+            <Text style={styles.currentUserAvatarText}>Y</Text>
+          </View>
+
+          <View style={styles.inputPill}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write a comment..."
+              placeholderTextColor={colors.onSurfaceVariant}
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmitEditing={handleSubmitComment}
+              returnKeyType="send"
+              maxLength={500}
+            />
+            <Pressable
+              style={[styles.sendBtn, (!commentText.trim() || submitting) && styles.sendBtnDisabled]}
+              onPress={(e) => {
+                if (e && e.stopPropagation) {
+                  e.stopPropagation();
+                }
+                handleSubmitComment();
+              }}
+              disabled={!commentText.trim() || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.onPrimary} />
+              ) : (
+                <Ionicons
+                  name="send"
+                  size={16}
+                  color={commentText.trim() ? colors.onPrimary : colors.outline}
+                />
+              )}
+            </Pressable>
+          </View>
         </Pressable>
-      </Pressable>
+
+      </View>
     </Pressable>
   );
 }

@@ -30,7 +30,7 @@ function StatCard({
   const styles = React.useMemo(
     () => ({
       statCard: {
-        flexBasis: "47%" as const,
+        flexBasis: "43%" as const,
         backgroundColor: colors.surfaceContainer,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.outlineVariant,
@@ -151,7 +151,7 @@ export default function LibraryScreen({ navigation }: any) {
               Every saved post, searchable, forever.
             </Text>
 
-            <View style={styles.statsGrid}>
+            {/* <View style={styles.statsGrid}>
               <StatCard
                 label="Total Saved"
                 value={savedPosts.length.toLocaleString()}
@@ -177,7 +177,7 @@ export default function LibraryScreen({ navigation }: any) {
                 accent={colors.warning}
                 colors={colors}
               />
-            </View>
+            </View> */}
 
             <View style={styles.divider} />
             <Text style={styles.sectionTitle}>Recently Saved</Text>

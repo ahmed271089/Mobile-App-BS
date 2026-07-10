@@ -188,8 +188,8 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         marginBottom: spacing.lg,
         backgroundColor: colors.primaryContainer,
       },
-      mediaText: { ...typography.bodyBold, color: colors.primary },
-      mediaHint: { ...typography.caption, color: colors.onSurfaceVariant },
+      mediaText: { ...typography.bodyBold, color: colors.card },
+      mediaHint: { ...typography.caption, color: colors.onSurface },
       aiCard: {
         backgroundColor: `${colors.primaryContainer}33`,
         borderRadius: radius.lg,
@@ -278,25 +278,25 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
     const result =
       source === "camera-photo"
         ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.85,
-            allowsEditing: true,
-            aspect: [4, 3],
-          })
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+          allowsEditing: true,
+          aspect: [4, 3],
+        })
         : source === "camera-video"
           ? await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-              quality: 0.85,
-              allowsEditing: false,
-              videoMaxDuration: 60, // Max 60 seconds for videos
-            })
+            mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+            quality: 0.85,
+            allowsEditing: false,
+            videoMaxDuration: 60, // Max 60 seconds for videos
+          })
           : await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.All,
-              quality: 0.85,
-              allowsMultipleSelection: true,
-              selectionLimit: 5 - images.length,
-              videoMaxDuration: 60, // Max 60 seconds for videos
-            });
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            quality: 0.85,
+            allowsMultipleSelection: true,
+            selectionLimit: 5 - images.length,
+            videoMaxDuration: 60, // Max 60 seconds for videos
+          });
 
     if (!result.canceled && result.assets.length > 0) {
       const newMedia = result.assets.map((a) => {
@@ -319,7 +319,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
       Alert.alert("Limit reached", "You can attach up to 5 images per post.");
       return;
     }
-    
+
     if (Platform.OS === "web") {
       // Alert.alert with custom buttons is not supported on web.
       // The web file picker naturally allows picking files or taking photos if on mobile web.
@@ -479,7 +479,7 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
         )}
         {images.length < 5 && (
           <Pressable style={styles.mediaBox} onPress={handleShowImagePicker}>
-            <Ionicons name="camera-outline" size={24} color={colors.primary} />
+            <Ionicons name="camera-outline" size={24} color={colors.card} />
             <Text style={styles.mediaText}>
               {images.length === 0 ? "Add photo or video" : "Add more photos"}
             </Text>
@@ -487,38 +487,38 @@ export default function ProblemDefinitionScreen({ navigation, route }: any) {
           </Pressable>
         )}
 
-        {type === "PROBLEM" && (
-          <View style={styles.aiCard}>
-            <View style={styles.aiHeader}>
-              <Badge label="AI Agent" variant="info" icon="✨" />
-              <Text style={styles.aiTitle}>AI Agent Assistant</Text>
-            </View>
-            <Text style={styles.aiDesc}>
-              Get AI suggestions before you share publicly.
-            </Text>
-            {!aiSuggestions ? (
-              <Button
-                label={aiLoading ? "Analyzing…" : "Generate Suggestions"}
-                variant="secondary"
-                loading={aiLoading}
-                disabled={!title || !description || !categoryId}
-                onPress={handleGenerateSuggestions}
-              />
-            ) : (
-              <View style={styles.suggestionsBox}>
-                <Text style={styles.suggestedDetailsLabel}>
-                  AI Suggested Details
-                </Text>
-                {aiSuggestions.map((s, i) => (
-                  <View key={i} style={styles.suggestionRow}>
-                    <View style={styles.suggestionDot} />
-                    <Text style={styles.suggestionText}>{s}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
+        {/* // {type === "PROBLEM" && ( 
+          // <View style={styles.aiCard}>
+          //   <View style={styles.aiHeader}>
+          //     <Badge label="AI Agent" variant="info" icon="✨" />
+          //     <Text style={styles.aiTitle}>AI Agent Assistant</Text>
+          //   </View>
+          //   <Text style={styles.aiDesc}>
+          //     Get AI suggestions before you share publicly.
+          //   </Text>
+          //   {!aiSuggestions ? (
+          //     <Button
+          //       label={aiLoading ? "Analyzing…" : "Generate Suggestions"}
+          //       variant="secondary"
+          //       loading={aiLoading}
+          //       disabled={!title || !description || !categoryId}
+          //       onPress={handleGenerateSuggestions}
+          //     />
+          //   ) : (
+          //     <View style={styles.suggestionsBox}>
+          //       <Text style={styles.suggestedDetailsLabel}>
+          //         AI Suggested Details
+          //       </Text>
+          //       {aiSuggestions.map((s, i) => (
+          //         <View key={i} style={styles.suggestionRow}>
+          //           <View style={styles.suggestionDot} />
+          //           <Text style={styles.suggestionText}>{s}</Text>
+          //         </View>
+          //       ))}
+          //     </View>
+          //   )}
+          // </View>
+        // )} */}
 
         <Button
           label="Next: Review & Share"

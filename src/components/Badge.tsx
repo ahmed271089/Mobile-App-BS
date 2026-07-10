@@ -19,10 +19,10 @@ export function Badge({
   const VARIANT_STYLES = useMemo(
     () => ({
       primary: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
-      success: { bg: colors.secondaryContainer, fg: colors.success },
-      warning: { bg: colors.tertiaryContainer, fg: colors.warning },
-      danger: { bg: colors.errorContainer, fg: colors.error },
-      info: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
+      success: { bg: colors.successMuted, fg: colors.success },
+      warning: { bg: colors.warningMuted, fg: colors.warning },
+      danger: { bg: colors.dangerMuted, fg: colors.danger },
+      info: { bg: colors.infoMuted, fg: colors.info },
       neutral: { bg: colors.surfaceContainerHigh, fg: colors.onSurfaceVariant },
     }),
     [colors],

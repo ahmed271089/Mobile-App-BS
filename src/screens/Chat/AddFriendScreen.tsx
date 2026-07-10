@@ -72,7 +72,7 @@ export default function AddFriendScreen({ navigation }: any) {
         },
         avatarText: {
           ...typography.caption,
-          color: colors.primary,
+          color: colors.card,
           fontWeight: "700",
         },
         name: { ...typography.bodyBold, color: colors.onSurface },
@@ -164,7 +164,7 @@ export default function AddFriendScreen({ navigation }: any) {
                   {item.reputationPoints.toLocaleString()} reputation
                 </Text>
               </View>
-              <Button
+              <Button style={{width:"20%"}}
                 label={sent.has(item.id) ? "Sent" : "Add"}
                 disabled={sent.has(item.id)}
                 onPress={() => handleSend(item.id)}
