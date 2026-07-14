@@ -7,10 +7,12 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  Image,
+  useColorScheme,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useColors, spacing, typography } from "../../theme";
 import { PostCard } from "../../components/PostCard";
 import { getFeed, getCategories } from "../../api/posts";
@@ -21,6 +23,7 @@ import { MockPost } from "../../data/mockData";
 export default function HomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const theme = useColorScheme();
 
   const [feedData, setFeedData] = useState<MockPost[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
@@ -46,11 +49,13 @@ export default function HomeScreen({ navigation }: any) {
           alignItems: "center",
           marginBottom: spacing.lg,
         },
-        greeting: { ...typography.h2, color: colors.onSurface },
+        greeting: { ...typography.h2, color: colors.primary, fontWeight: "bold",fontStyle: 'italic' },
         subGreeting: {
           ...typography.body,
           color: colors.onSurfaceVariant,
           marginTop: 4,
+          fontStyle: 'italic',
+          fontWeight: '500'
         },
         badge: {
           position: "absolute",
@@ -229,7 +234,9 @@ export default function HomeScreen({ navigation }: any) {
     <View>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.greeting}>Best Solving</Text>
+          <Text style={styles.greeting}>
+            Best Solving
+          </Text>
           <Text style={styles.subGreeting}>What needs fixing today?</Text>
         </View>
         <Pressable

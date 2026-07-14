@@ -14,7 +14,7 @@ import { useColors, spacing, typography } from "../../theme";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { searchUsers, ApiUser } from "../../api/users";
-import { sendFriendRequest } from "../../api/chat";
+import { sendFriendRequest, listFriends, startConversation } from "../../api/chat";
 
 export default function AddFriendScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -28,6 +28,15 @@ export default function AddFriendScreen({ navigation }: any) {
   >([]);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState<Set<string>>(new Set());
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    listFriends()
+      .then((friends) => {
+        setFriendIds(new Set(friends.map((f) => f.id)));
+      })
+      .catch(console.warn);
+  }, []);
 
   const styles = React.useMemo(
     () =>
@@ -89,7 +98,13 @@ export default function AddFriendScreen({ navigation }: any) {
     const timer = setTimeout(() => {
       setLoading(true);
       searchUsers(query.trim())
-        .then(setResults)
+        .then((data) => {
+          const filtered = data.filter((u) => {
+            const n = u.name.toLowerCase();
+            return n !== "ai agent" && n !== "system admin";
+          });
+          setResults(filtered);
+        })
         .catch(console.warn)
         .finally(() => setLoading(false));
     }, 400);
@@ -103,6 +118,18 @@ export default function AddFriendScreen({ navigation }: any) {
       Alert.alert("Sent!", "Friend request sent successfully.");
     } catch {
       Alert.alert("Error", "Could not send friend request.");
+    }
+  };
+
+  const handleOpenChat = async (user: ApiUser) => {
+    try {
+      const conv = await startConversation(user.id);
+      navigation.navigate("ChatThread", {
+        conversationId: conv.id,
+        otherUser: user,
+      });
+    } catch {
+      Alert.alert("Error", "Could not open conversation.");
     }
   };
 
@@ -151,26 +178,36 @@ export default function AddFriendScreen({ navigation }: any) {
               {query ? "No users found." : "Search for someone to add."}
             </Text>
           }
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {item.name.slice(0, 2).toUpperCase()}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.sub}>
-                  {item.reputationPoints.toLocaleString()} reputation
-                </Text>
-              </View>
-              <Button style={{width:"20%"}}
-                label={sent.has(item.id) ? "Sent" : "Add"}
-                disabled={sent.has(item.id)}
-                onPress={() => handleSend(item.id)}
-              />
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isFriend = friendIds.has(item.id);
+            return (
+              <Pressable
+                style={styles.row}
+                onPress={() => {
+                  if (isFriend) handleOpenChat(item as ApiUser);
+                }}
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {item.name.slice(0, 2).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.sub}>
+                    {item.reputationPoints.toLocaleString()} reputation
+                  </Text>
+                </View>
+                {!isFriend && (
+                  <Button style={{width:"25%"}}
+                    label={sent.has(item.id) ? "Sent" : "Add"}
+                    disabled={sent.has(item.id)}
+                    onPress={() => handleSend(item.id)}
+                  />
+                )}
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>

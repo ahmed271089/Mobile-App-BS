@@ -54,6 +54,7 @@ export function ConfirmModal({
           maxWidth: 400,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.outlineVariant,
+          
           ...Platform.select({
             ios: {
               shadowColor: "#000",
@@ -80,9 +81,11 @@ export function ConfirmModal({
         buttons: {
           flexDirection: "row",
           gap: spacing.md,
+          justifyContent: "center",
+          
         },
         button: {
-          flex: 1,
+          
           paddingVertical: spacing.md,
           paddingHorizontal: spacing.lg,
           borderRadius: radius.lg,

@@ -79,7 +79,7 @@ export default function FriendsScreen({ navigation }: any) {
         },
         avatarText: {
           ...typography.caption,
-          color: colors.primary,
+          color: colors.card,
           fontWeight: "700",
         },
         nameContainer: {
@@ -117,7 +117,13 @@ export default function FriendsScreen({ navigation }: any) {
   const loadFriends = () => {
     setLoading(true);
     listFriends()
-      .then(setFriends)
+      .then((data) => {
+        const filtered = data.filter((u) => {
+          const n = u.name.toLowerCase();
+          return n !== "ai agent" && n !== "system admin";
+        });
+        setFriends(filtered);
+      })
       .catch(console.warn)
       .finally(() => setLoading(false));
   };
@@ -211,8 +217,8 @@ export default function FriendsScreen({ navigation }: any) {
           renderItem={({ item }) => (
             <View style={styles.row}>
               {/* Avatar */}
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
+              <View style={styles.avatar} >
+                <Text style={styles.avatarText} >
                   {item.name.slice(0, 2).toUpperCase()}
                 </Text>
               </View>

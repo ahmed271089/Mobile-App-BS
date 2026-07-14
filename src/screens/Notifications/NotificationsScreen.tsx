@@ -155,6 +155,8 @@ export default function NotificationsScreen({ navigation }: any) {
       });
     } else if (item.type === "FRIEND_REQUEST") {
       navigation.navigate("Chat", { screen: "FriendRequests" });
+    } else if ((item.type === "COMMENT" || item.type === "SOLVED") && item.payload.postId) {
+      navigation.navigate("PostDetail", { id: item.payload.postId });
     }
   };
 
