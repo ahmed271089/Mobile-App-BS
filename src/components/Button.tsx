@@ -8,7 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useColors, gradients, radius, typography, spacing } from "../theme";
+import { useColors, radius, typography, spacing } from "../theme";
 
 interface ButtonProps {
   label: string;
@@ -90,7 +90,7 @@ export function Button({
           disabled={disabled || loading}
           style={{ opacity: disabled ? 0.5 : 1 }}
         >
-          <LinearGradient colors={gradients.primary} style={styles.base}>
+          <LinearGradient colors={[colors.primary, colors.primary]} style={styles.base}>
             {loading ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (

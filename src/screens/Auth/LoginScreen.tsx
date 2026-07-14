@@ -7,9 +7,11 @@ import {
   Platform,
   ScrollView,
   Pressable,
+  Image,
+  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useColors, spacing, typography } from "../../theme";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
@@ -45,6 +47,7 @@ function extractErrorMessage(error: unknown): string {
 export default function LoginScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const theme = useColorScheme();
   const { connect } = useSocket();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +67,8 @@ export default function LoginScreen({ navigation }: any) {
           ...typography.bodyBold,
           color: colors.primary,
           marginBottom: spacing.xxl,
+          fontStyle: 'italic',
+          fontWeight: 'bold',
         },
         title: {
           ...typography.h1,
@@ -185,7 +190,9 @@ export default function LoginScreen({ navigation }: any) {
           { paddingTop: insets.top + spacing.xxl },
         ]}
       >
-        <Text style={styles.logo}>🧠 Best Solving</Text>
+        <Text style={[styles.logo, { fontSize: 30, textAlign: "center", marginBottom: spacing.xxl }]}>
+          Best Solving
+        </Text>
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>
           Log in to continue your repair journey.

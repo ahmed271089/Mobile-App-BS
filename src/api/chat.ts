@@ -41,6 +41,10 @@ export function startConversation(otherUserId: string) {
   return api.post<{ id: string }>("/conversations", { otherUserId });
 }
 
+export function deleteConversation(conversationId: string) {
+  return api.delete(`/conversations/${conversationId}`);
+}
+
 export function getMessages(conversationId: string, before?: string) {
   const query = before ? `?before=${encodeURIComponent(before)}` : "";
   return api.get<ChatMessage[]>(

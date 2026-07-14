@@ -26,7 +26,11 @@ export default function LeaderboardScreen({ navigation }: any) {
   const loadLeaderboard = useCallback(async () => {
     try {
       const data = await getLeaderboard();
-      setUsers(data);
+      const filteredUsers = data.filter(u => {
+        const n = u.name.toLowerCase();
+        return n !== "ai agent" && n !== "system admin";
+      });
+      setUsers(filteredUsers);
     } catch (err) {
       console.warn("Failed to load leaderboard", err);
     } finally {
@@ -88,7 +92,7 @@ export default function LeaderboardScreen({ navigation }: any) {
         },
         rankText: {
           ...typography.bodyBold,
-          color: colors.primary,
+          color: colors.card,
         },
         avatar: {
           width: 40,
@@ -101,7 +105,7 @@ export default function LeaderboardScreen({ navigation }: any) {
         },
         avatarText: {
           ...typography.bodyBold,
-          color: colors.primary,
+          color: colors.card,
         },
         avatarImage: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.md },
         userInfo: { flex: 1 },

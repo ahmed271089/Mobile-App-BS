@@ -6,12 +6,14 @@ import {
   FlatList,
   Pressable,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors, spacing, typography } from "../../theme";
-import { listConversations, ConversationSummary } from "../../api/chat";
+import { listConversations, ConversationSummary, deleteConversation } from "../../api/chat";
 
 export default function ConversationsListScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -113,6 +115,41 @@ export default function ConversationsListScreen({ navigation }: any) {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleDeleteConversation = (id: string) => {
+    console.log("Attempting to delete conversation:", id);
+    if (Platform.OS === "web") {
+      if (window.confirm("Are you sure you want to delete this conversation?")) {
+        deleteConversation(id)
+          .then(() => loadConversations())
+          .catch((err) => {
+            console.warn("Failed to delete conversation", err);
+            alert("Could not delete conversation.");
+          });
+      }
+    } else {
+      Alert.alert(
+        "Delete Conversation",
+        "Are you sure you want to delete this conversation?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteConversation(id);
+                loadConversations();
+              } catch (err) {
+                console.warn("Failed to delete conversation", err);
+                Alert.alert("Error", "Could not delete conversation.");
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       loadConversations();
@@ -140,7 +177,11 @@ export default function ConversationsListScreen({ navigation }: any) {
         <View style={styles.headerActions}>
           <Pressable
             style={styles.iconBtn}
-            onPress={() => navigation.navigate("FriendRequests")}
+            hitSlop={15}
+            onPress={() => {
+              console.log("FriendRequests button pressed");
+              navigation.navigate("FriendRequests");
+            }}
           >
             <Ionicons
               name="mail-unread-outline"
@@ -150,11 +191,15 @@ export default function ConversationsListScreen({ navigation }: any) {
           </Pressable>
           <Pressable
             style={styles.iconBtn}
-            onPress={() => navigation.navigate("AddFriend")}
+            hitSlop={15}
+            onPress={() => {
+              console.log("AddFriend button pressed");
+              navigation.navigate("AddFriend");
+            }}
           >
             <Ionicons
               name="person-add-outline"
-              size={18}
+              size={20}
               color={colors.onSurface}
             />
           </Pressable>
@@ -198,33 +243,42 @@ export default function ConversationsListScreen({ navigation }: any) {
               : "";
 
             return (
-              <Pressable
-                style={styles.row}
-                onPress={() =>
-                  navigation.navigate("ChatThread", {
-                    conversationId: item.id,
-                    otherUser: item.otherParticipants[0],
-                  })
-                }
-              >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {initials}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={unread ? styles.nameUnread : styles.name} numberOfLines={1}>
-                      {title}
+              <View style={styles.row}>
+                <Pressable
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.md }}
+                  onPress={() =>
+                    navigation.navigate("ChatThread", {
+                      conversationId: item.id,
+                      otherUser: item.otherParticipants[0],
+                    })
+                  }
+                  onLongPress={() => handleDeleteConversation(item.id)}
+                >
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {initials}
                     </Text>
-                    {time ? <Text style={styles.time}>{time}</Text> : null}
                   </View>
-                  <Text style={unread ? styles.previewUnread : styles.preview} numberOfLines={1}>
-                    {item.lastMessage?.content ?? "Say hello 👋"}
-                  </Text>
-                </View>
-                {unread && <View style={styles.unreadDot} />}
-              </Pressable>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={unread ? styles.nameUnread : styles.name} numberOfLines={1}>
+                        {title}
+                      </Text>
+                      {time ? <Text style={styles.time}>{time}</Text> : null}
+                    </View>
+                    <Text style={unread ? styles.previewUnread : styles.preview} numberOfLines={1}>
+                      {item.lastMessage?.content ?? "Say hello 👋"}
+                    </Text>
+                  </View>
+                  {unread && <View style={styles.unreadDot} />}
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDeleteConversation(item.id)}
+                  style={{ padding: spacing.sm, marginLeft: spacing.xs }}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </Pressable>
+              </View>
             );
           }}
         />
